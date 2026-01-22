@@ -8,7 +8,9 @@ const EventsManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingEvent, setEditingEvent] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filter, setFilter] = useState('all'); // all, upcoming, past
+    const [filter, setFilter] = useState('all');
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [imagePreview, setImagePreview] = useState('');
 
     const [formData, setFormData] = useState({
         title: '',
@@ -32,9 +34,10 @@ const EventsManagement = () => {
         try {
             setLoading(true);
             const response = await api.get('/events');
-            setEvents(response.data);
+            setEvents(response.data.data || []);
         } catch (error) {
             console.error('Error fetching events:', error);
+            setEvents([]);
         } finally {
             setLoading(false);
         }
@@ -74,6 +77,54 @@ const EventsManagement = () => {
         return newErrors;
     };
 
+    // Handle image upload
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Check file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('Image size should not exceed 10MB');
+            return;
+        }
+
+        setUploadingImage(true);
+
+        try {
+            const formDataImg = new FormData();
+            formDataImg.append('image', file);
+            formDataImg.append('folder', 'just-dc/events');
+
+            const response = await api.post('/upload', formDataImg, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            const imageUrl = response.data.data.url;
+            setFormData(prev => ({ ...prev, image: imageUrl }));
+            setImagePreview(imageUrl);
+            alert('Image uploaded successfully!');
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    // Remove uploaded image
+    const handleRemoveImage = () => {
+        setFormData(prev => ({ ...prev, image: '' }));
+        setImagePreview('');
+    };
+
     // Handle submit (Create/Update)
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -86,10 +137,8 @@ const EventsManagement = () => {
 
         try {
             if (editingEvent) {
-                // Update event
                 await api.put(`/events/${editingEvent._id}`, formData);
             } else {
-                // Create event
                 await api.post('/events', formData);
             }
 
@@ -97,6 +146,7 @@ const EventsManagement = () => {
             closeModal();
         } catch (error) {
             console.error('Error saving event:', error);
+            alert('Error saving event. Please try again.');
         }
     };
 
@@ -108,6 +158,7 @@ const EventsManagement = () => {
                 fetchEvents();
             } catch (error) {
                 console.error('Error deleting event:', error);
+                alert('Error deleting event. Please try again.');
             }
         }
     };
@@ -126,6 +177,7 @@ const EventsManagement = () => {
             image: '',
         });
         setErrors({});
+        setImagePreview('');
         setShowModal(true);
     };
 
@@ -139,10 +191,11 @@ const EventsManagement = () => {
             time: event.time,
             location: event.location,
             category: event.category,
-            maxParticipants: event.maxParticipants,
+            maxParticipants: event.maxParticipants || '',
             image: event.image || '',
         });
         setErrors({});
+        setImagePreview(event.image || '');
         setShowModal(true);
     };
 
@@ -161,6 +214,7 @@ const EventsManagement = () => {
             image: '',
         });
         setErrors({});
+        setImagePreview('');
     };
 
     if (loading) {
@@ -194,7 +248,6 @@ const EventsManagement = () => {
             {/* Filters and Search */}
             <div className="bg-white rounded-2xl p-6 mb-6 border border-gray-200">
                 <div className="flex flex-col md:flex-row gap-4">
-                    {/* Search */}
                     <div className="flex-1 relative">
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
@@ -206,7 +259,6 @@ const EventsManagement = () => {
                         />
                     </div>
 
-                    {/* Filter Buttons */}
                     <div className="flex gap-2">
                         <button
                             onClick={() => setFilter('all')}
@@ -246,7 +298,6 @@ const EventsManagement = () => {
                         key={event._id}
                         className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
                     >
-                        {/* Event Image */}
                         <div className="h-48 bg-gradient-to-br from-primary to-secondary relative">
                             {event.image ? (
                                 <img
@@ -266,7 +317,6 @@ const EventsManagement = () => {
                             </div>
                         </div>
 
-                        {/* Event Content */}
                         <div className="p-6">
                             <h3 className="font-heading font-bold text-xl text-dark mb-3 line-clamp-2">
                                 {event.title}
@@ -295,7 +345,6 @@ const EventsManagement = () => {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => openEditModal(event)}
@@ -334,7 +383,6 @@ const EventsManagement = () => {
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        {/* Modal Header */}
                         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
                             <h2 className="font-heading font-bold text-2xl text-dark">
                                 {editingEvent ? 'Edit Event' : 'Create New Event'}
@@ -347,7 +395,6 @@ const EventsManagement = () => {
                             </button>
                         </div>
 
-                        {/* Modal Body */}
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             {/* Title */}
                             <div>
@@ -478,19 +525,48 @@ const EventsManagement = () => {
                                 </div>
                             </div>
 
-                            {/* Image URL */}
+                            {/* Image Upload */}
                             <div>
                                 <label className="block text-sm font-semibold text-dark mb-2">
-                                    Image URL
+                                    Event Image
                                 </label>
-                                <input
-                                    type="text"
-                                    name="image"
-                                    value={formData.image}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
-                                    placeholder="https://example.com/image.jpg"
-                                />
+
+                                {/* Image Preview */}
+                                {(imagePreview || formData.image) && (
+                                    <div className="mb-4 relative">
+                                        <img
+                                            src={imagePreview || formData.image}
+                                            alt="Preview"
+                                            className="w-full h-48 object-cover rounded-xl"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveImage}
+                                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                                        >
+                                            <FaTimes />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Upload Button */}
+                                <div className="flex gap-2">
+                                    <label className="flex-1 cursor-pointer">
+                                        <div className="px-4 py-3 bg-primary text-white text-center font-semibold rounded-xl hover:bg-primary-dark transition-colors">
+                                            {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                            disabled={uploadingImage}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                </div>
+                                <p className="text-xs text-gray mt-2">
+                                    Max file size: 10MB. Supports: JPG, PNG, WEBP
+                                </p>
                             </div>
 
                             {/* Form Actions */}

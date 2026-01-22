@@ -22,30 +22,14 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            // TEMPORARY MOCK LOGIN - Remove when backend is ready
-            // Accept any email/password for testing
-            const mockUser = {
-                _id: '1',
-                name: 'Admin User',
-                email: email,
-                role: 'admin'
-            };
+            const response = await api.post('/auth/login', { email, password });
+            const { token, user } = response.data;
 
-            const mockToken = 'mock-jwt-token-12345';
-
-            localStorage.setItem('token', mockToken);
-            localStorage.setItem('user', JSON.stringify(mockUser));
-            setUser(mockUser);
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            setUser(user);
 
             return { success: true };
-
-            // UNCOMMENT THIS WHEN BACKEND IS READY:
-            // const response = await api.post('/auth/login', { email, password });
-            // const { token, user } = response.data;
-            // localStorage.setItem('token', token);
-            // localStorage.setItem('user', JSON.stringify(user));
-            // setUser(user);
-            // return { success: true };
         } catch (error) {
             return {
                 success: false,

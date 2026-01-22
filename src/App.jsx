@@ -16,9 +16,11 @@ import Register from './pages/Register';
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
 import EventsManagement from './pages/admin/EventsManagement';
+import Members from './pages/admin/Members';
 
 // Components
 import ProtectedRoute from './components/common/ProtectedRoute';
+import GalleryManagement from './pages/admin/GalleryManagement';
 
 function App() {
   return (
@@ -49,8 +51,8 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="events" element={<EventsManagement />} />
-        <Route path="members" element={<Dashboard />} />
-        <Route path="gallery" element={<Dashboard />} />
+        <Route path="members" element={<Members />} />
+        <Route path="gallery" element={<GalleryManagement />} />
         <Route path="settings" element={<Dashboard />} />
       </Route>
 

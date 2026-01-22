@@ -1,103 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaExpand } from 'react-icons/fa';
+import api from '../../services/api';
 
 const GalleryGrid = () => {
+    const [galleries, setGalleries] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedImage, setSelectedImage] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [allImages, setAllImages] = useState([]);
 
-    const categories = ['all', 'Tournaments', 'Workshops', 'Practice Sessions', 'Social Events', 'Achievements'];
+    useEffect(() => {
+        fetchGalleries();
+    }, []);
 
-    const images = [
-        {
-            id: 1,
-            url: 'https://images.unsplash.com/photo-1540317580384-e5d43616d00b?w=800&h=600&fit=crop',
-            title: 'Inter-University Debate Championship 2025',
-            category: 'Tournaments',
-            date: 'December 2025',
-        },
-        {
-            id: 2,
-            url: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800&h=600&fit=crop',
-            title: 'Team Strategy Session',
-            category: 'Practice Sessions',
-            date: 'November 2025',
-        },
-        {
-            id: 3,
-            url: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop',
-            title: 'Public Speaking Workshop',
-            category: 'Workshops',
-            date: 'October 2025',
-        },
-        {
-            id: 4,
-            url: 'https://images.unsplash.com/photo-1560439513-74b037a25d84?w=800&h=600&fit=crop',
-            title: 'National Debate Competition',
-            category: 'Tournaments',
-            date: 'September 2025',
-        },
-        {
-            id: 5,
-            url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=600&fit=crop',
-            title: 'Annual Cultural Night',
-            category: 'Social Events',
-            date: 'August 2025',
-        },
-        {
-            id: 6,
-            url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop',
-            title: 'Executive Committee Meeting',
-            category: 'Social Events',
-            date: 'July 2025',
-        },
-        {
-            id: 7,
-            url: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&h=600&fit=crop',
-            title: 'Championship Trophy Ceremony',
-            category: 'Achievements',
-            date: 'June 2025',
-        },
-        {
-            id: 8,
-            url: 'https://images.unsplash.com/photo-1559223607-a43c990c18b0?w=800&h=600&fit=crop',
-            title: 'Training Workshop for Freshers',
-            category: 'Workshops',
-            date: 'May 2025',
-        },
-        {
-            id: 9,
-            url: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=800&h=600&fit=crop',
-            title: 'Victory Celebration',
-            category: 'Achievements',
-            date: 'April 2025',
-        },
-        {
-            id: 10,
-            url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=800&h=600&fit=crop',
-            title: 'Weekly Practice Debate',
-            category: 'Practice Sessions',
-            date: 'March 2025',
-        },
-        {
-            id: 11,
-            url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=600&fit=crop',
-            title: 'Regional Tournament Finals',
-            category: 'Tournaments',
-            date: 'February 2025',
-        },
-        {
-            id: 12,
-            url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&h=600&fit=crop',
-            title: 'Team Building Retreat',
-            category: 'Social Events',
-            date: 'January 2025',
-        },
-    ];
+    const fetchGalleries = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/gallery?isPublished=true');
+            const galleriesData = response.data.data || [];
+            setGalleries(galleriesData);
+
+            // Flatten all images from all galleries
+            const flatImages = galleriesData.flatMap(gallery =>
+                gallery.images.map(image => ({
+                    id: image._id,
+                    url: image.url,
+                    title: gallery.title,
+                    category: gallery.category,
+                    date: gallery.eventDate ? new Date(gallery.eventDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '',
+                    caption: image.caption || '',
+                }))
+            );
+            setAllImages(flatImages);
+        } catch (error) {
+            console.error('Error fetching galleries:', error);
+            setGalleries([]);
+            setAllImages([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Get unique categories from galleries
+    const categories = ['all', ...new Set(galleries.map(g => g.category))];
 
     const filteredImages = selectedCategory === 'all'
-        ? images
-        : images.filter(img => img.category === selectedCategory);
+        ? allImages
+        : allImages.filter(img => img.category === selectedCategory);
 
     const openLightbox = (image, index) => {
         setSelectedImage(image);
@@ -120,6 +70,30 @@ const GalleryGrid = () => {
         setSelectedImage(filteredImages[prevIndex]);
     };
 
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            if (selectedImage) {
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowRight') nextImage();
+                if (e.key === 'ArrowLeft') prevImage();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [selectedImage, currentIndex]);
+
+    if (loading) {
+        return (
+            <section className="py-20 bg-gradient-to-b from-white to-gray-50">
+                <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary"></div>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section className="py-20 bg-gradient-to-b from-white to-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,9 +109,9 @@ const GalleryGrid = () => {
                             <button
                                 key={category}
                                 onClick={() => setSelectedCategory(category)}
-                                className={`px-6 py-3 rounded-xl font-semibold transition-all ${selectedCategory === category
-                                        ? 'bg-primary text-white shadow-lg scale-105'
-                                        : 'bg-white text-gray border border-gray-200 hover:border-primary hover:text-primary'
+                                className={`px-6 py-3 rounded-xl font-semibold transition-all capitalize ${selectedCategory === category
+                                    ? 'bg-primary text-white shadow-lg scale-105'
+                                    : 'bg-white text-gray border border-gray-200 hover:border-primary hover:text-primary'
                                     }`}
                             >
                                 {category === 'all' ? 'All Photos' : category}
@@ -181,9 +155,11 @@ const GalleryGrid = () => {
                                         <h3 className="text-white font-heading font-bold text-sm line-clamp-2">
                                             {image.title}
                                         </h3>
-                                        <p className="text-white text-opacity-80 text-xs mt-1">
-                                            {image.date}
-                                        </p>
+                                        {image.date && (
+                                            <p className="text-white text-opacity-80 text-xs mt-1">
+                                                {image.date}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -193,7 +169,11 @@ const GalleryGrid = () => {
                     <div className="text-center py-16">
                         <div className="text-6xl mb-4">📷</div>
                         <h3 className="font-heading font-bold text-2xl text-dark mb-2">No Photos Found</h3>
-                        <p className="text-gray">Try selecting a different category</p>
+                        <p className="text-gray">
+                            {selectedCategory === 'all'
+                                ? 'No photos have been uploaded yet.'
+                                : `No photos found in ${selectedCategory} category.`}
+                        </p>
                     </div>
                 )}
 
@@ -246,15 +226,21 @@ const GalleryGrid = () => {
                             className="w-full h-auto rounded-lg"
                         />
                         <div className="text-center mt-6">
-                            <span className="inline-block px-4 py-1.5 bg-primary text-white text-sm font-semibold rounded-full mb-3">
+                            <span className="inline-block px-4 py-1.5 bg-primary text-white text-sm font-semibold rounded-full mb-3 capitalize">
                                 {selectedImage.category}
                             </span>
                             <h3 className="text-white font-heading font-bold text-2xl mb-2">
                                 {selectedImage.title}
                             </h3>
                             <p className="text-gray-300 text-sm">
-                                {selectedImage.date} • {currentIndex + 1} / {filteredImages.length}
+                                {selectedImage.date && `${selectedImage.date} • `}
+                                {currentIndex + 1} / {filteredImages.length}
                             </p>
+                            {selectedImage.caption && (
+                                <p className="text-gray-400 text-sm mt-2">
+                                    {selectedImage.caption}
+                                </p>
+                            )}
                         </div>
                     </div>
 
