@@ -2,7 +2,7 @@ import Hero from '../components/common/Hero';
 import LeadershipMessages from '../components/common/LeadershipMessages';
 import EventsSection from '../components/common/EventsSection';
 import StatsSection from '../components/common/StatsSection';
-import GallerySection from '../components/common/GallerySection';
+import GallerySection from '../components/gallery/GallerySection';
 import TestimonialsSection from '../components/common/TestimonialsSection';
 
 const Home = () => {

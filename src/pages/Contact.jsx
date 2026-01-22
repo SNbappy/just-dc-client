@@ -1,7 +1,15 @@
+import ContactHero from '../components/contact/ContactHero';
+import ContactInfo from '../components/contact/ContactInfo';
+import ContactForm from '../components/contact/ContactForm';
+import FAQ from '../components/contact/FAQ';
+
 const Contact = () => {
     return (
-        <div className="min-h-screen">
-            <h1 className="text-4xl font-heading font-bold text-primary">Contact</h1>
+        <div>
+            <ContactHero />
+            <ContactInfo />
+            <ContactForm />
+            <FAQ />
         </div>
     );
 };
