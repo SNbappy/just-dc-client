@@ -1,11 +1,13 @@
 import Hero from '../components/common/Hero';
 import LeadershipMessages from '../components/common/LeadershipMessages';
+import EventsSection from '../components/common/EventsSection';
 
 const Home = () => {
     return (
         <div>
             <Hero />
             <LeadershipMessages />
+            <EventsSection />
 
             {/* More sections will be added here */}
         </div>
