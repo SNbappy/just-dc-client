@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaQuoteLeft, FaStar, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const TestimonialsSection = () => {
@@ -63,6 +63,31 @@ const TestimonialsSection = () => {
         },
     ];
 
+    // Define functions with useCallback to prevent re-creation
+    const nextSlide = useCallback(() => {
+        if (!isAnimating) {
+            setIsAnimating(true);
+            setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+            setTimeout(() => setIsAnimating(false), 500);
+        }
+    }, [isAnimating, testimonials.length]);
+
+    const prevSlide = useCallback(() => {
+        if (!isAnimating) {
+            setIsAnimating(true);
+            setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+            setTimeout(() => setIsAnimating(false), 500);
+        }
+    }, [isAnimating, testimonials.length]);
+
+    const goToSlide = useCallback((index) => {
+        if (!isAnimating) {
+            setIsAnimating(true);
+            setCurrentIndex(index);
+            setTimeout(() => setIsAnimating(false), 500);
+        }
+    }, [isAnimating]);
+
     // Auto-advance testimonials
     useEffect(() => {
         if (!isPaused) {
@@ -72,31 +97,7 @@ const TestimonialsSection = () => {
 
             return () => clearInterval(interval);
         }
-    }, [currentIndex, isPaused]);
-
-    const nextSlide = () => {
-        if (!isAnimating) {
-            setIsAnimating(true);
-            setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-            setTimeout(() => setIsAnimating(false), 500);
-        }
-    };
-
-    const prevSlide = () => {
-        if (!isAnimating) {
-            setIsAnimating(true);
-            setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
-            setTimeout(() => setIsAnimating(false), 500);
-        }
-    };
-
-    const goToSlide = (index) => {
-        if (!isAnimating) {
-            setIsAnimating(true);
-            setCurrentIndex(index);
-            setTimeout(() => setIsAnimating(false), 500);
-        }
-    };
+    }, [isPaused, nextSlide]);
 
     // Get visible testimonials (current + next 2)
     const getVisibleTestimonials = () => {

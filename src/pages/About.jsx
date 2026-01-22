@@ -1,7 +1,15 @@
+import AboutHero from '../components/about/AboutHero';
+import MissionVision from '../components/about/MissionVision';
+import OurHistory from '../components/about/OurHistory';
+import ExecutiveCommittee from '../components/about/ExecutiveCommittee';
+
 const About = () => {
     return (
-        <div className="min-h-screen">
-            <h1 className="text-4xl font-heading font-bold text-primary">About Us</h1>
+        <div>
+            <AboutHero />
+            <MissionVision />
+            <OurHistory />
+            <ExecutiveCommittee />
         </div>
     );
 };

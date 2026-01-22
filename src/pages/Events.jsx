@@ -1,7 +1,11 @@
+import EventsHero from '../components/events/EventsHero';
+import EventsListing from '../components/events/EventsListing';
+
 const Events = () => {
     return (
-        <div className="min-h-screen">
-            <h1 className="text-4xl font-heading font-bold text-primary">Events</h1>
+        <div>
+            <EventsHero />
+            <EventsListing />
         </div>
     );
 };

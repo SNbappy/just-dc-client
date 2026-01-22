@@ -1,0 +1,53 @@
+const EventsHero = () => {
+    return (
+        <section className="relative bg-gradient-to-br from-secondary via-secondary-dark to-accent py-24 lg:py-32 overflow-hidden">
+
+            {/* Decorative Background Elements */}
+            <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-10 right-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+                <div className="absolute bottom-10 left-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+                {/* Content */}
+                <div className="text-center text-white">
+                    <div className="inline-block mb-6">
+                        <span className="px-4 py-1.5 bg-white bg-opacity-20 backdrop-blur-sm font-semibold text-xs uppercase tracking-wider rounded-full">
+                            Events & Activities
+                        </span>
+                    </div>
+
+                    <h1 className="font-heading font-bold text-5xl lg:text-6xl mb-6">
+                        Debates, Tournaments & Workshops
+                    </h1>
+
+                    <p className="text-xl lg:text-2xl text-white text-opacity-90 max-w-3xl mx-auto leading-relaxed">
+                        Join us in exciting debates, competitive tournaments, and skill-building workshops
+                        that shape future leaders and eloquent speakers.
+                    </p>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-12 max-w-3xl mx-auto">
+                        <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6">
+                            <div className="text-3xl font-bold mb-1">15+</div>
+                            <div className="text-white text-opacity-80 text-sm">Events This Semester</div>
+                        </div>
+                        <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6">
+                            <div className="text-3xl font-bold mb-1">500+</div>
+                            <div className="text-white text-opacity-80 text-sm">Total Participants</div>
+                        </div>
+                        <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-2xl p-6">
+                            <div className="text-3xl font-bold mb-1">8</div>
+                            <div className="text-white text-opacity-80 text-sm">Upcoming Events</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+    );
+};
+
+export default EventsHero;
