@@ -1,269 +1,240 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaSpinner } from 'react-icons/fa';
+import { register } from '../services/authService';
+import toast from 'react-hot-toast';
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaGraduationCap, FaIdCard, FaMoneyBillWave } from 'react-icons/fa';
 
 const Register = () => {
     const navigate = useNavigate();
-
     const [formData, setFormData] = useState({
         name: '',
         email: '',
-        phone: '',
         password: '',
         confirmPassword: '',
+        phone: '',
+        department: '',
+        batch: '',
+        studentId: '',
     });
-
-    const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [serverError, setServerError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-
-        if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-        setServerError('');
-    };
-
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.name.trim()) {
-            newErrors.name = 'Name is required';
-        }
-
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
-        }
-
-        if (!formData.phone.trim()) {
-            newErrors.phone = 'Phone number is required';
-        }
-
-        if (!formData.password) {
-            newErrors.password = 'Password is required';
-        } else if (formData.password.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
-        }
-
-        if (!formData.confirmPassword) {
-            newErrors.confirmPassword = 'Please confirm your password';
-        } else if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-
-        return newErrors;
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const newErrors = validateForm();
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
+        if (formData.password !== formData.confirmPassword) {
+            toast.error('Passwords do not match');
             return;
         }
 
-        setIsSubmitting(true);
-        setServerError('');
+        if (formData.password.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
 
-        // Simulate API call
-        setTimeout(() => {
-            console.log('Registration data:', formData);
-            setIsSubmitting(false);
+        setLoading(true);
+        try {
+            const { confirmPassword, ...registerData } = formData;
+            await register(registerData);
+            toast.success('Registration successful! Please login and complete payment.');
             navigate('/login');
-        }, 1500);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Registration failed');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-secondary via-secondary-dark to-primary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-md w-full">
-
-                {/* Card */}
-                <div className="bg-white rounded-2xl shadow-2xl p-8">
-
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                        <div className="inline-block w-16 h-16 bg-gradient-to-br from-secondary to-primary rounded-2xl flex items-center justify-center mb-4">
-                            <span className="text-white font-bold text-2xl">JDC</span>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+            <div className="max-w-2xl w-full">
+                {/* Payment Notice */}
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded">
+                    <div className="flex">
+                        <FaMoneyBillWave className="text-yellow-400 text-xl mr-3 mt-1" />
+                        <div>
+                            <h3 className="text-yellow-800 font-semibold mb-1">Registration Fee Required</h3>
+                            <p className="text-yellow-700 text-sm">
+                                After registration, you need to pay a one-time registration fee of <strong>৳150</strong> to complete your membership.
+                            </p>
                         </div>
-                        <h2 className="font-heading font-bold text-3xl text-dark mb-2">
-                            Create Account
-                        </h2>
-                        <p className="text-gray">
-                            Join JUST Debate Club today
-                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-lg p-8">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-dark mb-2">Create Account</h1>
+                        <p className="text-gray">Join the JUST Debating Club</p>
                     </div>
 
-                    {/* Server Error */}
-                    {serverError && (
-                        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-                            <p className="text-sm">{serverError}</p>
-                        </div>
-                    )}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Full Name <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Enter your name"
+                                    />
+                                </div>
+                            </div>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                            {/* Email */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Email <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="your.email@example.com"
+                                    />
+                                </div>
+                            </div>
 
-                        {/* Name */}
-                        <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Full Name
-                            </label>
-                            <div className="relative">
-                                <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            {/* Phone */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Phone Number
+                                </label>
+                                <div className="relative">
+                                    <FaPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="+880 1XXX-XXXXXX"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Student ID */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Student ID
+                                </label>
+                                <div className="relative">
+                                    <FaIdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="text"
+                                        name="studentId"
+                                        value={formData.studentId}
+                                        onChange={handleChange}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Your student ID"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Department */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Department
+                                </label>
+                                <div className="relative">
+                                    <FaGraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="text"
+                                        name="department"
+                                        value={formData.department}
+                                        onChange={handleChange}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="e.g., CSE"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Batch */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Batch
+                                </label>
                                 <input
                                     type="text"
-                                    name="name"
-                                    value={formData.name}
+                                    name="batch"
+                                    value={formData.batch}
                                     onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.name ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="John Doe"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                    placeholder="e.g., 2022"
                                 />
                             </div>
-                            {errors.name && (
-                                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-                            )}
-                        </div>
 
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Email Address
-                            </label>
-                            <div className="relative">
-                                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.email ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="john@example.com"
-                                />
+                            {/* Password */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        minLength="6"
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Minimum 6 characters"
+                                    />
+                                </div>
                             </div>
-                            {errors.email && (
-                                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                            )}
-                        </div>
 
-                        {/* Phone */}
-                        <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Phone Number
-                            </label>
-                            <div className="relative">
-                                <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="+880 1234-567890"
-                                />
+                            {/* Confirm Password */}
+                            <div>
+                                <label className="block text-sm font-medium text-dark mb-2">
+                                    Confirm Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
+                                    <input
+                                        type="password"
+                                        name="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                        placeholder="Re-enter password"
+                                    />
+                                </div>
                             </div>
-                            {errors.phone && (
-                                <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
-                            )}
                         </div>
 
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="password"
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.password ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            {errors.password && (
-                                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-                            )}
-                        </div>
-
-                        {/* Confirm Password */}
-                        <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Confirm Password
-                            </label>
-                            <div className="relative">
-                                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="password"
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            {errors.confirmPassword && (
-                                <p className="mt-1 text-sm text-red-500">{errors.confirmPassword}</p>
-                            )}
-                        </div>
-
-                        {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className={`w-full flex items-center justify-center gap-3 py-3 bg-secondary text-white font-bold rounded-xl hover:bg-secondary-dark transition-all shadow-lg hover:shadow-xl ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
+                            disabled={loading}
+                            className="w-full btn-primary py-3 text-lg font-semibold"
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <FaSpinner className="animate-spin" />
-                                    Creating Account...
-                                </>
-                            ) : (
-                                'Create Account'
-                            )}
+                            {loading ? 'Creating Account...' : 'Register'}
                         </button>
-
                     </form>
 
-                    {/* Login Link */}
-                    <div className="mt-6 text-center">
-                        <p className="text-gray">
-                            Already have an account?{' '}
-                            <Link to="/login" className="text-secondary hover:text-secondary-dark font-semibold">
-                                Sign in here
-                            </Link>
-                        </p>
-                    </div>
-
+                    <p className="text-center text-gray mt-6">
+                        Already have an account?{' '}
+                        <Link to="/login" className="text-primary hover:text-primary-dark font-semibold">
+                            Login here
+                        </Link>
+                    </p>
                 </div>
-
-                {/* Back to Home */}
-                <div className="text-center mt-6">
-                    <Link to="/" className="text-white hover:text-gray-200 font-semibold">
-                        ← Back to Home
-                    </Link>
-                </div>
-
             </div>
         </div>
     );

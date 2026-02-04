@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { useAuth } from '../../hooks/useAuth';
+import { FaTachometerAlt, FaMoneyBillWave } from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthProvider';
 import { NAV_LINKS } from '../../utils/constants';
 
 const Navbar = () => {
@@ -10,6 +11,9 @@ const Navbar = () => {
     const { isAuthenticated, user, logout } = useAuth();
 
     const toggleMenu = () => setIsOpen(!isOpen);
+
+    // Check if user can access admin dashboard
+    const canAccessAdmin = user && ['admin', 'president', 'general_secretary', 'moderator'].includes(user.role);
 
     return (
         <nav className="bg-white shadow-md sticky top-0 z-50">
@@ -42,13 +46,48 @@ const Navbar = () => {
                                 {link.name}
                             </NavLink>
                         ))}
+
+                        {/* Dashboard Link - Only for admin/president/GS/moderator */}
+                        {isAuthenticated && canAccessAdmin && (
+                            <NavLink
+                                to="/admin/dashboard"
+                                className={({ isActive }) =>
+                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive
+                                        ? 'text-primary'
+                                        : 'text-gray hover:text-primary'
+                                    }`
+                                }
+                            >
+                                <FaTachometerAlt />
+                                Admin
+                            </NavLink>
+                        )}
+
+                        {/* Payments Link - For all logged in users */}
+                        {isAuthenticated && (
+                            <NavLink
+                                to="/payments"
+                                className={({ isActive }) =>
+                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive
+                                        ? 'text-primary'
+                                        : 'text-gray hover:text-primary'
+                                    }`
+                                }
+                            >
+                                <FaMoneyBillWave />
+                                Payments
+                            </NavLink>
+                        )}
                     </div>
 
                     {/* Desktop Auth Buttons */}
                     <div className="hidden md:flex items-center space-x-4">
                         {isAuthenticated ? (
                             <>
-                                <span className="text-gray text-sm">Hi, {user?.name}</span>
+                                <div className="text-right">
+                                    <p className="text-dark text-sm font-medium">{user?.name}</p>
+                                    <p className="text-gray text-xs capitalize">{user?.role?.replace('_', ' ')}</p>
+                                </div>
                                 <button
                                     onClick={logout}
                                     className="bg-secondary text-white px-4 py-2 rounded-lg hover:bg-secondary-dark transition-colors duration-200"
@@ -103,11 +142,44 @@ const Navbar = () => {
                                 </NavLink>
                             ))}
 
+                            {/* Mobile Dashboard Link */}
+                            {isAuthenticated && canAccessAdmin && (
+                                <NavLink
+                                    to="/admin/dashboard"
+                                    onClick={() => setIsOpen(false)}
+                                    className={({ isActive }) =>
+                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? 'text-primary' : 'text-gray hover:text-primary'
+                                        }`
+                                    }
+                                >
+                                    <FaTachometerAlt />
+                                    Admin Dashboard
+                                </NavLink>
+                            )}
+
+                            {/* Mobile Payments Link */}
+                            {isAuthenticated && (
+                                <NavLink
+                                    to="/payments"
+                                    onClick={() => setIsOpen(false)}
+                                    className={({ isActive }) =>
+                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? 'text-primary' : 'text-gray hover:text-primary'
+                                        }`
+                                    }
+                                >
+                                    <FaMoneyBillWave />
+                                    Payments
+                                </NavLink>
+                            )}
+
                             {/* Mobile Auth Buttons */}
                             <div className="pt-4 border-t border-gray-light space-y-2">
                                 {isAuthenticated ? (
                                     <>
-                                        <p className="text-gray text-sm">Hi, {user?.name}</p>
+                                        <div className="py-2">
+                                            <p className="text-dark text-sm font-medium">{user?.name}</p>
+                                            <p className="text-gray text-xs capitalize">{user?.role?.replace('_', ' ')}</p>
+                                        </div>
                                         <button
                                             onClick={() => {
                                                 logout();

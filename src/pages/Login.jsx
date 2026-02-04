@@ -1,203 +1,175 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaEnvelope, FaLock, FaSpinner } from 'react-icons/fa';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthProvider';
+import api from '../services/api';
+import toast from 'react-hot-toast';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login: authLogin } = useAuth();
 
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
-
-    const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [serverError, setServerError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-
-        if (errors[name]) {
-            setErrors(prev => ({
-                ...prev,
-                [name]: ''
-            }));
-        }
-        setServerError('');
-    };
-
-    const validateForm = () => {
-        const newErrors = {};
-
-        if (!formData.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            newErrors.email = 'Email is invalid';
-        }
-
-        if (!formData.password) {
-            newErrors.password = 'Password is required';
-        }
-
-        return newErrors;
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const newErrors = validateForm();
-
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
+        // Validation
+        if (!formData.email || !formData.password) {
+            toast.error('Please fill in all fields');
             return;
         }
 
-        setIsSubmitting(true);
-        setServerError('');
+        setLoading(true);
 
-        const result = await login(formData.email, formData.password);
+        try {
+            // Call API directly
+            const response = await api.post('/auth/login', {
+                email: formData.email,
+                password: formData.password,
+            });
 
-        if (result.success) {
-            navigate('/admin/dashboard');
-        } else {
-            setServerError(result.message);
-            setIsSubmitting(false);
+            console.log('Login response:', response.data);
+
+            // Get token and user from response
+            const { token, user } = response.data;
+
+            if (!token || !user) {
+                throw new Error('Invalid response format');
+            }
+
+            // Save to localStorage
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            // Update context (pass user and token)
+            authLogin(user, token);
+
+            toast.success('Login successful!');
+
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+                // Redirect based on role
+                if (['admin', 'president', 'general_secretary', 'moderator'].includes(user.role)) {
+                    navigate('/admin/dashboard');
+                } else {
+                    navigate('/');
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Login error:', error);
+            toast.error(error.response?.data?.message || 'Invalid email or password');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-secondary/10 px-4 py-12">
             <div className="max-w-md w-full">
-
-                {/* Card */}
-                <div className="bg-white rounded-2xl shadow-2xl p-8">
-
-                    {/* Header */}
+                <div className="bg-white rounded-xl shadow-xl p-8">
+                    {/* Logo and Title */}
                     <div className="text-center mb-8">
-                        <div className="inline-block w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-2xl flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center mx-auto mb-4">
                             <span className="text-white font-bold text-2xl">JDC</span>
                         </div>
-                        <h2 className="font-heading font-bold text-3xl text-dark mb-2">
-                            Welcome Back
-                        </h2>
-                        <p className="text-gray">
-                            Sign in to access your admin panel
-                        </p>
+                        <h1 className="text-3xl font-bold text-dark mb-2">Welcome Back</h1>
+                        <p className="text-gray">Login to your JUST DC account</p>
                     </div>
 
-                    {/* Server Error */}
-                    {serverError && (
-                        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl">
-                            <p className="text-sm">{serverError}</p>
-                        </div>
-                    )}
-
-                    {/* Form */}
+                    {/* Login Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
-
-                        {/* Email */}
+                        {/* Email Field */}
                         <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Email Address
+                            <label htmlFor="email" className="block text-sm font-medium text-dark mb-2">
+                                Email Address <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
-                                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
                                 <input
                                     type="email"
+                                    id="email"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.email ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="admin@just.com"
+                                    required
+                                    disabled={loading}
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition disabled:bg-gray-100"
+                                    placeholder="your.email@example.com"
+                                    autoComplete="email"
                                 />
                             </div>
-                            {errors.email && (
-                                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
-                            )}
                         </div>
 
-                        {/* Password */}
+                        {/* Password Field */}
                         <div>
-                            <label className="block text-sm font-semibold text-dark mb-2">
-                                Password
+                            <label htmlFor="password" className="block text-sm font-medium text-dark mb-2">
+                                Password <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
-                                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
                                     name="password"
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${errors.password ? 'border-red-500' : 'border-gray-200'
-                                        } focus:border-primary focus:outline-none transition-colors`}
-                                    placeholder="••••••••"
+                                    required
+                                    disabled={loading}
+                                    minLength={6}
+                                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition disabled:bg-gray-100"
+                                    placeholder="Enter your password"
+                                    autoComplete="current-password"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray hover:text-primary transition"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                                </button>
                             </div>
-                            {errors.password && (
-                                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
-                            )}
-                        </div>
-
-                        {/* Remember & Forgot */}
-                        <div className="flex items-center justify-between">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-                                />
-                                <span className="text-sm text-gray">Remember me</span>
-                            </label>
-
-                            <Link to="#" className="text-sm text-primary hover:text-primary-dark font-semibold">
-                                Forgot password?
-                            </Link>
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className={`w-full flex items-center justify-center gap-3 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                                }`}
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <FaSpinner className="animate-spin" />
-                                    Signing in...
-                                </>
+                            {loading ? (
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                    <span>Logging in...</span>
+                                </div>
                             ) : (
-                                'Sign In'
+                                'Login'
                             )}
                         </button>
-
                     </form>
 
                     {/* Register Link */}
-                    <div className="mt-6 text-center">
-                        <p className="text-gray">
-                            Don't have an account?{' '}
-                            <Link to="/register" className="text-primary hover:text-primary-dark font-semibold">
-                                Create one now
-                            </Link>
-                        </p>
-                    </div>
-
+                    <p className="text-center text-gray mt-6">
+                        Don't have an account?{' '}
+                        <Link
+                            to="/register"
+                            className="text-primary hover:text-primary-dark font-semibold transition"
+                        >
+                            Register here
+                        </Link>
+                    </p>
                 </div>
-
-                {/* Back to Home */}
-                <div className="text-center mt-6">
-                    <Link to="/" className="text-white hover:text-gray-200 font-semibold">
-                        ← Back to Home
-                    </Link>
-                </div>
-
             </div>
         </div>
     );
