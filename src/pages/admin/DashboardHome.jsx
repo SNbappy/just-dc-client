@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaUsers, FaCalendar, FaImages, FaTrophy, FaClock } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthProvider';
+import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
 const DashboardHome = () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { FaCalendar, FaClock, FaMapMarkerAlt, FaUsers } from 'react-icons/fa';
 import api from '../services/api';
 
@@ -24,33 +25,22 @@ const Events = () => {
         }
     };
 
-    // Filter events
-    const filteredEvents = events.filter(event => {
+    const filteredEvents = events.filter((event) => {
         const eventDate = new Date(event.date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        if (filter === 'upcoming') {
-            return eventDate >= today;
-        } else if (filter === 'past') {
-            return eventDate < today;
-        }
+        if (filter === 'upcoming') return eventDate >= today;
+        if (filter === 'past') return eventDate < today;
         return true;
     });
 
-    // Sort by date (upcoming first, then past)
     const sortedEvents = [...filteredEvents].sort((a, b) => {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
-        // If filtering upcoming, show nearest first
-        if (filter === 'upcoming') {
-            return dateA - dateB;
-        }
-        // If filtering past or all, show most recent first
-        return dateB - dateA;
+        if (filter === 'upcoming') return dateA - dateB; // nearest first
+        return dateB - dateA; // recent first
     });
 
     if (loading) {
@@ -64,7 +54,6 @@ const Events = () => {
     return (
         <div className="min-h-screen bg-gray-50 py-20">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="font-heading font-bold text-4xl md:text-5xl text-dark mb-4">
@@ -76,7 +65,7 @@ const Events = () => {
                 </div>
 
                 {/* Filter Buttons */}
-                <div className="flex justify-center gap-4 mb-12">
+                <div className="flex justify-center gap-4 mb-12 flex-wrap">
                     <button
                         onClick={() => setFilter('all')}
                         className={`px-6 py-3 rounded-xl font-semibold transition-all ${filter === 'all'
@@ -110,13 +99,15 @@ const Events = () => {
                 {sortedEvents.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {sortedEvents.map((event) => {
+                            const eventId = event.id ?? event._id; // ✅ supports both
                             const eventDate = new Date(event.date);
                             const isPast = eventDate < new Date();
 
                             return (
-                                <div
-                                    key={event._id}
-                                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+                                <Link
+                                    key={eventId}
+                                    to={`/events/${eventId}`}
+                                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 block"
                                 >
                                     {/* Event Image */}
                                     <div className="relative h-56 bg-gradient-to-br from-primary to-secondary overflow-hidden">
@@ -134,10 +125,10 @@ const Events = () => {
 
                                         {/* Status Badge */}
                                         <div className="absolute top-4 right-4">
-                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${isPast
-                                                    ? 'bg-gray-800 text-white'
-                                                    : 'bg-green-500 text-white'
-                                                }`}>
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${isPast ? 'bg-gray-800 text-white' : 'bg-green-500 text-white'
+                                                    }`}
+                                            >
                                                 {isPast ? 'Completed' : 'Upcoming'}
                                             </span>
                                         </div>
@@ -169,7 +160,7 @@ const Events = () => {
                                                         weekday: 'short',
                                                         year: 'numeric',
                                                         month: 'long',
-                                                        day: 'numeric'
+                                                        day: 'numeric',
                                                     })}
                                                 </span>
                                             </div>
@@ -184,27 +175,30 @@ const Events = () => {
                                                 <span className="line-clamp-1">{event.location}</span>
                                             </div>
 
-                                            {event.maxParticipants && (
+                                            {event.maxParticipants ? (
                                                 <div className="flex items-center gap-3 text-gray text-sm">
                                                     <FaUsers className="text-primary flex-shrink-0" />
                                                     <span>Max {event.maxParticipants} participants</span>
                                                 </div>
-                                            )}
+                                            ) : null}
                                         </div>
 
                                         {/* Action Button */}
-                                        {!isPast && (
-                                            <button className="w-full mt-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors">
+                                        {!isPast ? (
+                                            <div className="w-full mt-6 py-3 bg-primary text-white font-semibold rounded-xl text-center hover:bg-primary-dark transition-colors">
                                                 Register Now
-                                            </button>
+                                            </div>
+                                        ) : (
+                                            <div className="w-full mt-6 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl text-center">
+                                                View Details
+                                            </div>
                                         )}
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>
                 ) : (
-                    // Empty State
                     <div className="text-center py-20">
                         <FaCalendar className="text-6xl text-gray-300 mx-auto mb-4" />
                         <h3 className="font-heading font-bold text-2xl text-dark mb-2">
@@ -219,7 +213,6 @@ const Events = () => {
                         </p>
                     </div>
                 )}
-
             </div>
         </div>
     );

@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { HiMenu, HiX } from 'react-icons/hi';
-import { FaTachometerAlt, FaMoneyBillWave } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthProvider';
-import { NAV_LINKS } from '../../utils/constants';
+import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
+import { HiMenu, HiX } from "react-icons/hi";
+import { FaTachometerAlt, FaUserCircle } from "react-icons/fa";
+import { useAuth } from "../../hooks/useAuth";
+import { NAV_LINKS } from "../../utils/constants";
 
 const Navbar = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -12,14 +12,13 @@ const Navbar = () => {
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
-    // Check if user can access admin dashboard
-    const canAccessAdmin = user && ['admin', 'president', 'general_secretary', 'moderator'].includes(user.role);
+    const isTopManagement =
+        user && ["admin", "president", "general_secretary", "moderator"].includes(user.role);
 
     return (
         <nav className="bg-white shadow-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
-
                     {/* Logo */}
                     <Link to="/" className="flex items-center space-x-2">
                         <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
@@ -37,9 +36,7 @@ const Navbar = () => {
                                 key={link.path}
                                 to={link.path}
                                 className={({ isActive }) =>
-                                    `font-medium transition-colors duration-200 ${isActive
-                                        ? 'text-primary'
-                                        : 'text-gray hover:text-primary'
+                                    `font-medium transition-colors duration-200 ${isActive ? "text-primary" : "text-gray hover:text-primary"
                                     }`
                                 }
                             >
@@ -47,35 +44,31 @@ const Navbar = () => {
                             </NavLink>
                         ))}
 
-                        {/* Dashboard Link - Only for admin/president/GS/moderator */}
-                        {isAuthenticated && canAccessAdmin && (
+                        {/* User Dashboard */}
+                        {isAuthenticated && (
                             <NavLink
-                                to="/admin/dashboard"
+                                to="/dashboard"
                                 className={({ isActive }) =>
-                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive
-                                        ? 'text-primary'
-                                        : 'text-gray hover:text-primary'
+                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive ? "text-primary" : "text-gray hover:text-primary"
+                                    }`
+                                }
+                            >
+                                <FaUserCircle />
+                                Dashboard
+                            </NavLink>
+                        )}
+
+                        {/* Management Shortcut (your app routes are /dashboard/manage/*) */}
+                        {isAuthenticated && isTopManagement && (
+                            <NavLink
+                                to="/dashboard/manage/users"
+                                className={({ isActive }) =>
+                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive ? "text-primary" : "text-gray hover:text-primary"
                                     }`
                                 }
                             >
                                 <FaTachometerAlt />
-                                Admin
-                            </NavLink>
-                        )}
-
-                        {/* Payments Link - For all logged in users */}
-                        {isAuthenticated && (
-                            <NavLink
-                                to="/payments"
-                                className={({ isActive }) =>
-                                    `font-medium transition-colors duration-200 flex items-center gap-1 ${isActive
-                                        ? 'text-primary'
-                                        : 'text-gray hover:text-primary'
-                                    }`
-                                }
-                            >
-                                <FaMoneyBillWave />
-                                Payments
+                                Manage
                             </NavLink>
                         )}
                     </div>
@@ -86,7 +79,9 @@ const Navbar = () => {
                             <>
                                 <div className="text-right">
                                     <p className="text-dark text-sm font-medium">{user?.name}</p>
-                                    <p className="text-gray text-xs capitalize">{user?.role?.replace('_', ' ')}</p>
+                                    <p className="text-gray text-xs capitalize">
+                                        {user?.role?.replaceAll("_", " ")}
+                                    </p>
                                 </div>
                                 <button
                                     onClick={logout}
@@ -134,7 +129,7 @@ const Navbar = () => {
                                     to={link.path}
                                     onClick={() => setIsOpen(false)}
                                     className={({ isActive }) =>
-                                        `block py-2 font-medium transition-colors duration-200 ${isActive ? 'text-primary' : 'text-gray hover:text-primary'
+                                        `block py-2 font-medium transition-colors duration-200 ${isActive ? "text-primary" : "text-gray hover:text-primary"
                                         }`
                                     }
                                 >
@@ -142,43 +137,43 @@ const Navbar = () => {
                                 </NavLink>
                             ))}
 
-                            {/* Mobile Dashboard Link */}
-                            {isAuthenticated && canAccessAdmin && (
+                            {isAuthenticated && (
                                 <NavLink
-                                    to="/admin/dashboard"
+                                    to="/dashboard"
                                     onClick={() => setIsOpen(false)}
                                     className={({ isActive }) =>
-                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? 'text-primary' : 'text-gray hover:text-primary'
+                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? "text-primary" : "text-gray hover:text-primary"
+                                        }`
+                                    }
+                                >
+                                    <FaUserCircle />
+                                    Dashboard
+                                </NavLink>
+                            )}
+
+                            {isAuthenticated && isTopManagement && (
+                                <NavLink
+                                    to="/dashboard/manage/users"
+                                    onClick={() => setIsOpen(false)}
+                                    className={({ isActive }) =>
+                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? "text-primary" : "text-gray hover:text-primary"
                                         }`
                                     }
                                 >
                                     <FaTachometerAlt />
-                                    Admin Dashboard
+                                    Management
                                 </NavLink>
                             )}
 
-                            {/* Mobile Payments Link */}
-                            {isAuthenticated && (
-                                <NavLink
-                                    to="/payments"
-                                    onClick={() => setIsOpen(false)}
-                                    className={({ isActive }) =>
-                                        `block py-2 font-medium transition-colors duration-200 flex items-center gap-2 ${isActive ? 'text-primary' : 'text-gray hover:text-primary'
-                                        }`
-                                    }
-                                >
-                                    <FaMoneyBillWave />
-                                    Payments
-                                </NavLink>
-                            )}
-
-                            {/* Mobile Auth Buttons */}
+                            {/* Mobile Auth */}
                             <div className="pt-4 border-t border-gray-light space-y-2">
                                 {isAuthenticated ? (
                                     <>
                                         <div className="py-2">
                                             <p className="text-dark text-sm font-medium">{user?.name}</p>
-                                            <p className="text-gray text-xs capitalize">{user?.role?.replace('_', ' ')}</p>
+                                            <p className="text-gray text-xs capitalize">
+                                                {user?.role?.replaceAll("_", " ")}
+                                            </p>
                                         </div>
                                         <button
                                             onClick={() => {

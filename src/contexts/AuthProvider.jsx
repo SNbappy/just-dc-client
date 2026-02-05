@@ -1,83 +1,63 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-
-// Create context
-const AuthContext = createContext();
-
-// Export useAuth hook
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within AuthProvider');
-    }
-    return context;
-};
+import { useEffect, useState } from "react";
+import { AuthContext } from "./AuthContext";
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Load from localStorage once
     useEffect(() => {
-        const checkAuth = () => {
-            const token = localStorage.getItem('token');
-            const userData = localStorage.getItem('user');
+        const token = localStorage.getItem("token");
+        const userData = localStorage.getItem("user");
 
-            if (token && userData) {
-                try {
-                    setUser(JSON.parse(userData));
-                } catch (error) {
-                    console.error('Error parsing user data:', error);
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                }
+        if (token && userData) {
+            try {
+                setUser(JSON.parse(userData));
+            } catch (error) {
+                console.error("Error parsing user data:", error);
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                setUser(null);
             }
-            setLoading(false);
-        };
+        }
 
-        checkAuth();
+        setLoading(false);
     }, []);
 
-    // FIXED: Just store the data, don't make API call
+    // Save login
     const login = (userData, token) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(userData));
         setUser(userData);
     };
 
+    // Clear login
     const logout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setUser(null);
     };
 
+    // Update user in state + localStorage
     const updateUser = (userData) => {
         setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(userData));
     };
 
-    // Check if user has specific role
     const hasRole = (roles) => {
         if (!user) return false;
-        if (Array.isArray(roles)) {
-            return roles.includes(user.role);
-        }
-        return user.role === roles;
+        return Array.isArray(roles) ? roles.includes(user.role) : user.role === roles;
     };
 
-    // Check if user is admin or moderator
-    const isAdminOrModerator = () => {
-        return hasRole(['admin', 'moderator']);
-    };
+    const isAdminOrModerator = () => hasRole(["admin", "moderator"]);
 
-    // Check if user is executive (President, General Secretary, Admin, Moderator)
-    const isExecutive = () => {
-        return hasRole(['president', 'general_secretary', 'moderator', 'admin']);
-    };
+    const isExecutive = () =>
+        hasRole(["president", "general_secretary", "moderator", "admin"]);
 
-    // Check if user is a member
-    const isMember = () => {
-        return hasRole(['member', 'general_secretary', 'president', 'moderator', 'admin']);
-    };
+    const isMember = () =>
+        hasRole(["member", "general_secretary", "president", "moderator", "admin"]);
 
+    // ✅ No useMemo -> React Compiler warning gone
     const value = {
         user,
         login,

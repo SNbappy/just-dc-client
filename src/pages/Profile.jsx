@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthProvider';
+import { useAuth } from '../hooks/useAuth';
 import { FaUser, FaEnvelope, FaPhone, FaGraduationCap, FaIdCard, FaLayerGroup, FaLock } from 'react-icons/fa';
 
 const Profile = () => {

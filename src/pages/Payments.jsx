@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react';
-import { getMyPayments, initiateSSLPayment } from '../services/paymentService';
-import toast from 'react-hot-toast';
-import { FaCheckCircle, FaClock, FaTimesCircle, FaMoneyBillWave, FaMobileAlt } from 'react-icons/fa';
+import { useState, useEffect } from "react";
+import { getMyPayments, initiateSSLPayment } from "../services/paymentService";
+import toast from "react-hot-toast";
+import {
+    FaCheckCircle,
+    FaClock,
+    FaTimesCircle,
+    FaMoneyBillWave,
+    FaMobileAlt,
+} from "react-icons/fa";
 
 const Payments = () => {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentType, setPaymentType] = useState('');
+    const [paymentType, setPaymentType] = useState("");
     const [processingPayment, setProcessingPayment] = useState(false);
 
     useEffect(() => {
@@ -15,36 +21,22 @@ const Payments = () => {
     }, []);
 
     const fetchPayments = async () => {
+        setLoading(true);
         try {
             const response = await getMyPayments();
-            setPayments(response.data);
+            // backend returns: { success, count, data }
+            setPayments(response?.data || []);
         } catch (error) {
-            toast.error('Failed to fetch payments');
+            toast.error("Failed to fetch payments");
             console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    const handlePayNow = async (type, amount, month = null) => {
-        setProcessingPayment(true);
-        try {
-            const paymentData = {
-                amount,
-                type,
-                month: type === 'monthly' ? month : undefined,
-            };
-
-            const response = await initiateSSLPayment(paymentData);
-
-            if (response.success) {
-                // Redirect to SSLCommerz payment page
-                window.location.href = response.data.paymentUrl;
-            }
-        } catch (error) {
-            toast.error(error.response?.data?.message || 'Payment failed');
-            setProcessingPayment(false);
-        }
+    const getCurrentMonth = () => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     };
 
     const openPaymentModal = (type) => {
@@ -52,12 +44,40 @@ const Payments = () => {
         setShowPaymentModal(true);
     };
 
+    const handlePayNow = async (type, amount, month = null) => {
+        setProcessingPayment(true);
+        try {
+            const payload = {
+                amount,
+                type,
+                month: type === "monthly" ? month : undefined,
+            };
+
+            const response = await initiateSSLPayment(payload);
+
+            if (response?.success && response?.data?.paymentUrl) {
+                // Redirect user to SSLCommerz
+                window.location.href = response.data.paymentUrl;
+                return;
+            }
+
+            toast.error("Payment initiation failed (no paymentUrl returned)");
+            console.error("initiateSSLPayment response:", response);
+        } catch (error) {
+            toast.error(error?.response?.data?.message || "Payment failed");
+            console.error(error);
+        } finally {
+            setProcessingPayment(false);
+        }
+    };
+
     const getStatusBadge = (status) => {
         const badges = {
-            paid: { color: 'bg-green-100 text-green-700', icon: FaCheckCircle, text: 'Paid' },
-            pending: { color: 'bg-yellow-100 text-yellow-700', icon: FaClock, text: 'Pending' },
-            failed: { color: 'bg-red-100 text-red-700', icon: FaTimesCircle, text: 'Failed' },
-            overdue: { color: 'bg-orange-100 text-orange-700', icon: FaClock, text: 'Overdue' },
+            paid: { color: "bg-green-100 text-green-700", icon: FaCheckCircle, text: "Paid" },
+            pending: { color: "bg-yellow-100 text-yellow-700", icon: FaClock, text: "Pending" },
+            failed: { color: "bg-red-100 text-red-700", icon: FaTimesCircle, text: "Failed" },
+            overdue: { color: "bg-orange-100 text-orange-700", icon: FaClock, text: "Overdue" },
+            refunded: { color: "bg-gray-100 text-gray-700", icon: FaTimesCircle, text: "Refunded" },
         };
 
         const badge = badges[status] || badges.pending;
@@ -71,14 +91,13 @@ const Payments = () => {
         );
     };
 
-    const getCurrentMonth = () => {
-        const now = new Date();
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    };
+    const hasRegistrationPayment = payments.some(
+        (p) => p.type === "registration" && p.status === "paid"
+    );
 
-    const hasRegistrationPayment = payments.some(p => p.type === 'registration' && p.status === 'paid');
+    const currentMonth = getCurrentMonth();
     const currentMonthPayment = payments.find(
-        p => p.type === 'monthly' && p.month === getCurrentMonth() && p.status === 'paid'
+        (p) => p.type === "monthly" && p.month === currentMonth && p.status === "paid"
     );
 
     if (loading) {
@@ -102,6 +121,7 @@ const Payments = () => {
                         </div>
                         <FaMoneyBillWave className="text-4xl text-primary opacity-20" />
                     </div>
+
                     {hasRegistrationPayment ? (
                         <div className="flex items-center gap-2 text-green-600">
                             <FaCheckCircle />
@@ -109,7 +129,7 @@ const Payments = () => {
                         </div>
                     ) : (
                         <button
-                            onClick={() => openPaymentModal('registration')}
+                            onClick={() => openPaymentModal("registration")}
                             className="btn-primary w-full"
                             disabled={processingPayment}
                         >
@@ -128,6 +148,7 @@ const Payments = () => {
                         </div>
                         <FaMoneyBillWave className="text-4xl text-secondary opacity-20" />
                     </div>
+
                     {currentMonthPayment ? (
                         <div className="flex items-center gap-2 text-green-600">
                             <FaCheckCircle />
@@ -135,7 +156,7 @@ const Payments = () => {
                         </div>
                     ) : (
                         <button
-                            onClick={() => openPaymentModal('monthly')}
+                            onClick={() => openPaymentModal("monthly")}
                             className="btn-secondary w-full"
                             disabled={processingPayment}
                         >
@@ -168,20 +189,23 @@ const Payments = () => {
                                     <th className="text-left py-3 px-4 font-semibold text-dark">Status</th>
                                 </tr>
                             </thead>
+
                             <tbody>
                                 {payments.map((payment) => (
-                                    <tr key={payment._id} className="border-b border-gray-100 hover:bg-gray-50">
+                                    <tr key={payment.id ?? payment._id} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="py-3 px-4">
-                                            {new Date(payment.createdAt).toLocaleDateString()}
+                                            {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : "-"}
                                         </td>
                                         <td className="py-3 px-4 capitalize">
                                             {payment.type}
-                                            {payment.month && <span className="text-sm text-gray ml-2">({payment.month})</span>}
+                                            {payment.month && (
+                                                <span className="text-sm text-gray ml-2">({payment.month})</span>
+                                            )}
                                         </td>
                                         <td className="py-3 px-4 font-semibold">৳{payment.amount}</td>
-                                        <td className="py-3 px-4 capitalize">{payment.paymentMethod || '-'}</td>
+                                        <td className="py-3 px-4 capitalize">{payment.paymentMethod || "-"}</td>
                                         <td className="py-3 px-4 text-sm text-gray">
-                                            {payment.transactionId || 'Pending'}
+                                            {payment.transactionId || "Pending"}
                                         </td>
                                         <td className="py-3 px-4">{getStatusBadge(payment.status)}</td>
                                     </tr>
@@ -197,14 +221,14 @@ const Payments = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                         <h3 className="text-2xl font-bold text-dark mb-4">
-                            {paymentType === 'registration' ? 'Registration Fee Payment' : 'Monthly Fee Payment'}
+                            {paymentType === "registration" ? "Registration Fee Payment" : "Monthly Fee Payment"}
                         </h3>
 
                         <div className="bg-gray-50 rounded-lg p-4 mb-6">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-gray">Amount:</span>
                                 <span className="text-2xl font-bold text-primary">
-                                    ৳{paymentType === 'registration' ? '150' : '30'}
+                                    ৳{paymentType === "registration" ? "150" : "30"}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between">
@@ -215,17 +239,20 @@ const Payments = () => {
 
                         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                             <p className="text-sm text-blue-700">
-                                You will be redirected to SSLCommerz secure payment gateway. You can pay using bKash, Nagad, Rocket, or any credit/debit card.
+                                You will be redirected to SSLCommerz secure payment gateway. You can pay using
+                                bKash, Nagad, Rocket, or any credit/debit card.
                             </p>
                         </div>
 
                         <div className="space-y-3">
                             <button
-                                onClick={() => handlePayNow(
-                                    paymentType,
-                                    paymentType === 'registration' ? 150 : 30,
-                                    paymentType === 'monthly' ? getCurrentMonth() : null
-                                )}
+                                onClick={() =>
+                                    handlePayNow(
+                                        paymentType,
+                                        paymentType === "registration" ? 150 : 30,
+                                        paymentType === "monthly" ? currentMonth : null
+                                    )
+                                }
                                 className="btn-primary w-full flex items-center justify-center gap-2"
                                 disabled={processingPayment}
                             >
