@@ -1,3 +1,4 @@
+// pages/EventDetails.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../services/api";
@@ -12,6 +13,8 @@ import {
     FaGavel,
     FaListUl,
     FaTimes,
+    FaMicrophone,
+    FaUser,
 } from "react-icons/fa";
 
 const roleLabel = (role) => {
@@ -83,7 +86,10 @@ const EventDetails = () => {
         if (role === "organizer") return FaUserTie;
         if (role === "volunteer") return FaHandsHelping;
         if (role === "core_adjudicator") return FaGavel;
-        return FaListUl;
+        if (role === "tab_team") return FaListUl;
+        if (role === "speaker") return FaMicrophone;
+        if (role === "guest") return FaUser;
+        return FaUsers;
     };
 
     const closeRegModal = () => {
@@ -213,11 +219,11 @@ const EventDetails = () => {
                     </div>
 
                     <div className="p-6 md:p-8">
-                        <p className="text-gray leading-relaxed">{event.description}</p>
+                        <p className="text-gray leading-relaxed text-lg">{event.description}</p>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                             <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                                <FaCalendar className="text-primary" />
+                                <FaCalendar className="text-primary text-xl" />
                                 <div>
                                     <p className="text-xs text-gray">Date</p>
                                     <p className="font-semibold text-dark">
@@ -231,7 +237,7 @@ const EventDetails = () => {
                             </div>
 
                             <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                                <FaClock className="text-primary" />
+                                <FaClock className="text-primary text-xl" />
                                 <div>
                                     <p className="text-xs text-gray">Time</p>
                                     <p className="font-semibold text-dark">{event.time}</p>
@@ -239,7 +245,7 @@ const EventDetails = () => {
                             </div>
 
                             <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                                <FaMapMarkerAlt className="text-primary" />
+                                <FaMapMarkerAlt className="text-primary text-xl" />
                                 <div>
                                     <p className="text-xs text-gray">Location</p>
                                     <p className="font-semibold text-dark">{event.location}</p>
@@ -247,10 +253,10 @@ const EventDetails = () => {
                             </div>
 
                             <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
-                                <FaUsers className="text-primary" />
+                                <FaUsers className="text-primary text-xl" />
                                 <div>
-                                    <p className="text-xs text-gray">Max</p>
-                                    <p className="font-semibold text-dark">{event.maxParticipants || "—"}</p>
+                                    <p className="text-xs text-gray">Max Participants</p>
+                                    <p className="font-semibold text-dark">{event.maxParticipants || "Unlimited"}</p>
                                 </div>
                             </div>
                         </div>
@@ -259,9 +265,7 @@ const EventDetails = () => {
                         <div className="mt-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
                             <div className="text-sm text-gray">
                                 {fee > 0 ? (
-                                    <span>
-                                        After registering, submit your payment TX to confirm.
-                                    </span>
+                                    <span>After registering, submit your payment TX to confirm.</span>
                                 ) : (
                                     <span>Free registration will be confirmed instantly.</span>
                                 )}
@@ -281,53 +285,91 @@ const EventDetails = () => {
                     </div>
                 </div>
 
-                {/* Participants */}
-                <div className="mt-8 bg-white rounded-2xl shadow-md p-6 md:p-8">
-                    <h2 className="text-2xl font-bold text-dark mb-4">People</h2>
+                {/* ✅ UPDATED: Event Team Section */}
+                {Object.keys(grouped).length > 0 && (
+                    <div className="mt-8 bg-white rounded-2xl shadow-md p-6 md:p-8">
+                        <h2 className="text-2xl font-bold text-dark mb-6 flex items-center gap-3">
+                            <FaUsers className="text-primary" />
+                            Event Team
+                        </h2>
 
-                    {Object.keys(grouped).length === 0 ? (
-                        <p className="text-gray">No people added yet.</p>
-                    ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-8">
                             {Object.entries(grouped).map(([role, list]) => {
                                 const RoleIcon = IconForRole(role);
                                 return (
                                     <div key={role}>
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <RoleIcon className="text-primary" />
+                                        <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-gray-100">
+                                            <RoleIcon className="text-primary text-xl" />
                                             <h3 className="font-bold text-lg text-dark">{roleLabel(role)}</h3>
-                                            <span className="text-sm text-gray">({list.length})</span>
+                                            <span className="text-sm text-gray bg-gray-100 px-3 py-1 rounded-full">
+                                                {list.length}
+                                            </span>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                             {list.map((p, idx) => {
                                                 const internal = p?.type === "internal" && (p.user || p.userId);
                                                 const u = p.user;
-                                                const name = internal ? (u?.name || "Member") : p?.name;
-                                                const sub = internal
-                                                    ? (u?.email || "")
-                                                    : [p?.designation, p?.org].filter(Boolean).join(" • ");
+                                                const name = internal ? u?.name || "Member" : p?.name || "Guest";
+                                                const email = internal ? u?.email : null;
+                                                const designation = p?.designation || "";
+                                                const org = p?.org || p?.organization || "";
 
                                                 return (
                                                     <div
                                                         key={`${role}-${idx}`}
-                                                        className="border rounded-xl p-4 flex items-start justify-between gap-3"
+                                                        className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow"
                                                     >
-                                                        <div>
-                                                            {internal ? (
-                                                                <Link
-                                                                    to={`/users/${u?._id || p.userId}`}
-                                                                    className="font-semibold text-primary hover:underline"
+                                                        <div className="flex items-start gap-3">
+                                                            {/* Avatar */}
+                                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                                                                {name.charAt(0).toUpperCase()}
+                                                            </div>
+
+                                                            <div className="flex-1 min-w-0">
+                                                                {/* Name - clickable if internal */}
+                                                                {internal ? (
+                                                                    <Link
+                                                                        to={`/members/${u?.id || u?._id || p.userId}`}
+                                                                        className="font-semibold text-primary hover:underline line-clamp-1 block"
+                                                                    >
+                                                                        {name}
+                                                                    </Link>
+                                                                ) : (
+                                                                    <p className="font-semibold text-dark line-clamp-1">
+                                                                        {name}
+                                                                    </p>
+                                                                )}
+
+                                                                {/* Email for internal, designation for external */}
+                                                                {email && (
+                                                                    <p className="text-xs text-gray mt-1 line-clamp-1">
+                                                                        {email}
+                                                                    </p>
+                                                                )}
+
+                                                                {designation && (
+                                                                    <p className="text-sm text-gray mt-1 line-clamp-1">
+                                                                        {designation}
+                                                                    </p>
+                                                                )}
+
+                                                                {org && (
+                                                                    <p className="text-xs text-gray-400 mt-1 line-clamp-1">
+                                                                        {org}
+                                                                    </p>
+                                                                )}
+
+                                                                {/* Badge */}
+                                                                <span
+                                                                    className={`inline-block mt-2 px-2 py-1 rounded-full text-xs font-semibold ${internal
+                                                                            ? "bg-primary/10 text-primary"
+                                                                            : "bg-gray-100 text-gray-600"
+                                                                        }`}
                                                                 >
-                                                                    {name}
-                                                                </Link>
-                                                            ) : (
-                                                                <p className="font-semibold text-dark">{name || "External"}</p>
-                                                            )}
-                                                            <p className="text-sm text-gray mt-1">{sub}</p>
-                                                            <p className="text-xs mt-2 inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                                                                {internal ? "Internal" : "External"}
-                                                            </p>
+                                                                    {internal ? "Member" : "Guest"}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 );
@@ -337,15 +379,15 @@ const EventDetails = () => {
                                 );
                             })}
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* ================= Register Modal ================= */}
             {showRegModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-5 border-b flex items-center justify-between">
+                        <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white z-10">
                             <h3 className="text-xl font-bold text-dark">Event Registration</h3>
                             <button onClick={closeRegModal} className="text-gray-500 hover:text-dark">
                                 <FaTimes size={20} />
@@ -406,7 +448,9 @@ const EventDetails = () => {
                                             <label className="text-sm font-semibold text-dark">Organization</label>
                                             <input
                                                 value={regForm.organization}
-                                                onChange={(e) => setRegForm((p) => ({ ...p, organization: e.target.value }))}
+                                                onChange={(e) =>
+                                                    setRegForm((p) => ({ ...p, organization: e.target.value }))
+                                                }
                                                 className="mt-1 w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
                                                 placeholder="University/College"
                                             />
@@ -452,7 +496,8 @@ const EventDetails = () => {
                                     </button>
 
                                     <p className="text-xs text-gray">
-                                        Note: For inter-club events, login is required. If you are not logged in, you’ll get a login required error.
+                                        Note: For inter-club events, login is required. If you are not logged in, you'll
+                                        get a login required error.
                                     </p>
                                 </>
                             )}

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { FaCheckCircle, FaTimesCircle, FaSearch, FaSpinner } from 'react-icons/fa';
-import api from '../../services/api';
+import api from '../services/api';
 
 const VerifyCertificate = () => {
     const [searchParams] = useSearchParams();

@@ -1,3 +1,4 @@
+// pages/admin/EventsManagement.jsx
 import { useEffect, useState } from "react";
 import {
     FaPlus,
@@ -438,8 +439,8 @@ const EventsManagement = () => {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-6 py-3 rounded-xl font-semibold transition-colors ${filter === f
-                                    ? "bg-primary text-white"
-                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        ? "bg-primary text-white"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     }`}
                             >
                                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -483,8 +484,8 @@ const EventsManagement = () => {
 
                                 <span
                                     className={`px-3 py-1 text-sm font-semibold rounded-full ${event.registrationOpen
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-red-100 text-red-700"
                                         }`}
                                 >
                                     {event.registrationOpen ? "Registration Open" : "Registration Closed"}
@@ -518,14 +519,14 @@ const EventsManagement = () => {
                                 </div>
                             </div>
 
-                            {/* ✅ NEW: management button */}
+                            {/* ✅ UPDATED: Participants & Certificates button */}
                             <div className="mb-3">
                                 <Link
-                                    to={`/dashboard/manage/events/${eventIdKey(event)}/registrations`}
+                                    to={`/dashboard/manage/events/${eventIdKey(event)}/participants`}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-dark text-white font-semibold rounded-xl hover:opacity-90 transition"
                                 >
                                     <FaUsers />
-                                    Registrations
+                                    Participants & Certificates
                                 </Link>
                             </div>
 
@@ -844,82 +845,16 @@ const EventsManagement = () => {
                                 ) : (
                                     <div className="space-y-3">
                                         {formData.participants.map((p, idx) => (
-                                            <div key={idx} className="border border-gray-200 rounded-2xl p-4 bg-white">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex-1">
-                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                            {/* Role */}
+                                            <div key={idx} className="border border-gray-200 rounded-xl p-4">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div>
+                                                        <span className="inline-block px-3 py-1 bg-primary text-white text-xs font-semibold rounded-full mb-2">
+                                                            {p.type === "internal" ? "Internal" : "External"}
+                                                        </span>
+                                                        {p.type === "internal" && p.user && (
                                                             <div>
-                                                                <label className="text-xs text-gray font-semibold">Role</label>
-                                                                <select
-                                                                    value={p.role || "volunteer"}
-                                                                    onChange={(e) => updateParticipant(idx, { role: e.target.value })}
-                                                                    className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 focus:border-primary focus:outline-none"
-                                                                >
-                                                                    {PARTICIPANT_ROLES.map((r) => (
-                                                                        <option key={r.value} value={r.value}>
-                                                                            {r.label}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                            </div>
-
-                                                            {/* Type */}
-                                                            <div>
-                                                                <label className="text-xs text-gray font-semibold">Type</label>
-                                                                <input
-                                                                    value={p.type === "internal" ? "Internal (Clickable)" : "External (Not Clickable)"}
-                                                                    disabled
-                                                                    className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50"
-                                                                />
-                                                            </div>
-
-                                                            {/* Person */}
-                                                            <div>
-                                                                <label className="text-xs text-gray font-semibold">Person</label>
-
-                                                                {p.type === "internal" ? (
-                                                                    <div className="mt-1 px-3 py-2 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-between">
-                                                                        <div>
-                                                                            <p className="font-semibold text-dark">
-                                                                                {p.user?.name || `User ID: ${p.userId}`}
-                                                                            </p>
-                                                                            <p className="text-xs text-gray">{p.user?.email || ""}</p>
-                                                                        </div>
-                                                                        <FaExternalLinkAlt className="text-gray-400" title="Will be clickable later" />
-                                                                    </div>
-                                                                ) : (
-                                                                    <input
-                                                                        value={p.name || ""}
-                                                                        onChange={(e) => updateParticipant(idx, { name: e.target.value })}
-                                                                        placeholder="Name (external person)"
-                                                                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 focus:border-primary focus:outline-none"
-                                                                    />
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* External extra info */}
-                                                        {p.type !== "internal" && (
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                                                                <div>
-                                                                    <label className="text-xs text-gray font-semibold">Designation</label>
-                                                                    <input
-                                                                        value={p.designation || ""}
-                                                                        onChange={(e) => updateParticipant(idx, { designation: e.target.value })}
-                                                                        placeholder="e.g. Core Adjudicator"
-                                                                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 focus:border-primary focus:outline-none"
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="text-xs text-gray font-semibold">Organization</label>
-                                                                    <input
-                                                                        value={p.org || ""}
-                                                                        onChange={(e) => updateParticipant(idx, { org: e.target.value })}
-                                                                        placeholder="e.g. XYZ University"
-                                                                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 focus:border-primary focus:outline-none"
-                                                                    />
-                                                                </div>
+                                                                <p className="font-semibold text-dark">{p.user.name}</p>
+                                                                <p className="text-xs text-gray">{p.user.email}</p>
                                                             </div>
                                                         )}
                                                     </div>
@@ -927,15 +862,61 @@ const EventsManagement = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => removeParticipant(idx)}
-                                                        className="px-3 py-2 rounded-xl bg-red-100 text-red-600 font-semibold hover:bg-red-200"
+                                                        className="text-red-500 hover:text-red-700"
                                                     >
-                                                        Remove
+                                                        <FaTimes />
                                                     </button>
                                                 </div>
 
-                                                <div className="mt-3 text-xs text-gray">
-                                                    ✅ Role: <b>{roleLabel(p.role)}</b> •{" "}
-                                                    {p.type === "internal" ? "Clickable profile later" : "Not clickable"}
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray mb-1">Role</label>
+                                                        <select
+                                                            value={p.role}
+                                                            onChange={(e) => updateParticipant(idx, { role: e.target.value })}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
+                                                        >
+                                                            {PARTICIPANT_ROLES.map((r) => (
+                                                                <option key={r.value} value={r.value}>
+                                                                    {r.label}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    {p.type === "external" && (
+                                                        <>
+                                                            <div>
+                                                                <label className="block text-xs font-semibold text-gray mb-1">Name</label>
+                                                                <input
+                                                                    value={p.name || ""}
+                                                                    onChange={(e) => updateParticipant(idx, { name: e.target.value })}
+                                                                    placeholder="Full Name"
+                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-xs font-semibold text-gray mb-1">Designation</label>
+                                                                <input
+                                                                    value={p.designation || ""}
+                                                                    onChange={(e) => updateParticipant(idx, { designation: e.target.value })}
+                                                                    placeholder="e.g. Professor, Student"
+                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
+                                                                />
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="block text-xs font-semibold text-gray mb-1">Organization</label>
+                                                                <input
+                                                                    value={p.org || ""}
+                                                                    onChange={(e) => updateParticipant(idx, { org: e.target.value })}
+                                                                    placeholder="e.g. JUST, Dhaka University"
+                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
+                                                                />
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -943,12 +924,12 @@ const EventsManagement = () => {
                                 )}
                             </div>
 
-                            {/* Form Actions */}
+                            {/* Submit Buttons */}
                             <div className="flex gap-4 pt-4">
                                 <button
                                     type="button"
                                     onClick={closeModal}
-                                    className="flex-1 px-6 py-3 bg-gray-100 text-dark font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
                                 >
                                     Cancel
                                 </button>

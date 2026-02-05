@@ -1,5 +1,4 @@
-// src/config/dashboardMenu.js
-
+// config/dashboardMenu.js
 import {
     FaHome,
     FaUser,
@@ -9,10 +8,13 @@ import {
     FaUsers,
     FaUserShield,
     FaTasks,
+    FaCertificate,
+    FaEnvelope, // ✅ NEW
+    FaHistory, // ✅ NEW
 } from 'react-icons/fa';
 
 export const DASHBOARD_MENU = [
-    // Everyone
+    // ===================== EVERYONE =====================
     {
         key: 'home',
         label: 'Home',
@@ -27,6 +29,16 @@ export const DASHBOARD_MENU = [
         icon: FaUser,
         roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
+
+    // ✅ My Certificates
+    {
+        key: 'certificates',
+        label: 'My Certificates',
+        path: '/dashboard/certificates',
+        icon: FaCertificate,
+        roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
+    },
+
     {
         key: 'payments',
         label: 'Payments',
@@ -35,7 +47,7 @@ export const DASHBOARD_MENU = [
         roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // Members & above
+    // ===================== MEMBERS & ABOVE =====================
     {
         key: 'memberTasks',
         label: 'Member Tasks',
@@ -44,7 +56,7 @@ export const DASHBOARD_MENU = [
         roles: ['member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // Executive & above
+    // ===================== EXECUTIVE & ABOVE =====================
     {
         key: 'manageEvents',
         label: 'Manage Events',
@@ -67,7 +79,25 @@ export const DASHBOARD_MENU = [
         roles: ['executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // Top management (Admin + President + GS)
+    // ===================== TOP MANAGEMENT (ADMIN + PRESIDENT + GS + MODERATOR) =====================
+
+    // ✅ NEW: Email System
+    {
+        key: 'composeEmail',
+        label: 'Compose Email',
+        path: '/dashboard/manage/compose-email',
+        icon: FaEnvelope,
+        roles: ['admin', 'president', 'general_secretary', 'moderator'],
+    },
+    {
+        key: 'emailLogs',
+        label: 'Email History',
+        path: '/dashboard/manage/email-logs',
+        icon: FaHistory,
+        roles: ['admin', 'president', 'general_secretary', 'moderator'],
+    },
+
+    // User Management
     {
         key: 'manageUsers',
         label: 'User Management',
@@ -76,3 +106,36 @@ export const DASHBOARD_MENU = [
         roles: ['admin', 'president', 'general_secretary'],
     },
 ];
+
+// ✅ Helper function to get accessible menu items for a user
+export const getAccessibleMenuItems = (userRole) => {
+    if (!userRole) return [];
+    return DASHBOARD_MENU.filter((item) => item.roles.includes(userRole));
+};
+
+// ✅ Helper function to check if user has access to a specific route
+export const hasAccessToRoute = (userRole, routePath) => {
+    if (!userRole || !routePath) return false;
+    const menuItem = DASHBOARD_MENU.find((item) => item.path === routePath);
+    return menuItem ? menuItem.roles.includes(userRole) : false;
+};
+
+// ✅ Get menu sections for better organization
+export const getMenuSections = (userRole) => {
+    const accessibleItems = getAccessibleMenuItems(userRole);
+
+    return {
+        personal: accessibleItems.filter((item) =>
+            ['home', 'profile', 'certificates', 'payments'].includes(item.key)
+        ),
+        member: accessibleItems.filter((item) =>
+            ['memberTasks'].includes(item.key)
+        ),
+        management: accessibleItems.filter((item) =>
+            ['manageEvents', 'manageGallery', 'manageMembers', 'composeEmail', 'emailLogs'].includes(item.key)
+        ),
+        administration: accessibleItems.filter((item) =>
+            ['manageUsers'].includes(item.key)
+        ),
+    };
+};

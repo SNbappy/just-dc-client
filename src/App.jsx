@@ -1,3 +1,4 @@
+// App.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Layouts
@@ -8,11 +9,12 @@ import UserDashboardLayout from "./layouts/UserDashboardLayout";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Events from "./pages/Events";
-import EventDetails from "./pages/EventDetails"; // ✅ NEW
+import EventDetails from "./pages/EventDetails";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyCertificate from "./pages/VerifyCertificate";
 
 // Payment Pages
 import Payments from "./pages/Payments";
@@ -25,13 +27,18 @@ import Profile from "./pages/Profile";
 
 // Dashboard Pages
 import DashboardHome from "./pages/dashboard/DashboardHome";
+import MyCertificates from "./pages/dashboard/MyCertificates";
 
 // Management Pages
 import EventsManagement from "./pages/admin/EventsManagement";
-import EventRegistrations from "./pages/admin/EventRegistrations"; // ✅ NEW
+import EventParticipants from "./pages/admin/EventParticipants";
 import Members from "./pages/admin/Members";
 import GalleryManagement from "./pages/admin/GalleryManagement";
 import UserManagement from "./pages/admin/UserManagement";
+
+// ✅ Email System
+import ComposeEmail from './pages/admin/ComposeEmail';
+import EmailLogs from './pages/admin/EmailLogs';
 
 // Components
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -45,9 +52,10 @@ function App() {
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />
         <Route path="events" element={<Events />} />
-        <Route path="events/:id" element={<EventDetails />} /> {/* ✅ NEW */}
+        <Route path="events/:id" element={<EventDetails />} />
         <Route path="gallery" element={<Gallery />} />
         <Route path="contact" element={<Contact />} />
+        <Route path="verify-certificate" element={<VerifyCertificate />} />
       </Route>
 
       {/* ================= AUTH ROUTES ================= */}
@@ -76,8 +84,10 @@ function App() {
           </ProtectedRoute>
         }
       >
+        {/* Redirect /dashboard to /dashboard/home */}
         <Route index element={<Navigate to="/dashboard/home" replace />} />
 
+        {/* ========== PERSONAL SECTION ========== */}
         <Route
           path="home"
           element={
@@ -96,6 +106,16 @@ function App() {
           }
         />
 
+        {/* ✅ My Certificates */}
+        <Route
+          path="certificates"
+          element={
+            <RoleGate permission="dashboard.profile">
+              <MyCertificates />
+            </RoleGate>
+          }
+        />
+
         <Route
           path="payments"
           element={
@@ -105,19 +125,22 @@ function App() {
           }
         />
 
+        {/* ========== MEMBER SECTION ========== */}
         <Route
           path="tasks"
           element={
             <RoleGate permission="dashboard.tasks">
               <div className="bg-white p-6 rounded-xl shadow-md">
-                <h2 className="text-2xl font-bold">Member Tasks</h2>
+                <h2 className="text-2xl font-bold text-dark">Member Tasks</h2>
                 <p className="text-gray mt-2">Coming soon...</p>
               </div>
             </RoleGate>
           }
         />
 
-        {/* Management Pages */}
+        {/* ========== MANAGEMENT SECTION ========== */}
+
+        {/* Events Management */}
         <Route
           path="manage/events"
           element={
@@ -127,16 +150,17 @@ function App() {
           }
         />
 
-        {/* ✅ NEW: Registrations page for a specific event */}
+        {/* Event Participants */}
         <Route
-          path="manage/events/:id/registrations"
+          path="manage/events/:id/participants"
           element={
             <RoleGate permission="manage.events">
-              <EventRegistrations />
+              <EventParticipants />
             </RoleGate>
           }
         />
 
+        {/* Gallery Management */}
         <Route
           path="manage/gallery"
           element={
@@ -146,6 +170,7 @@ function App() {
           }
         />
 
+        {/* Members Management */}
         <Route
           path="manage/members"
           element={
@@ -155,6 +180,31 @@ function App() {
           }
         />
 
+        {/* ========== ✅ EMAIL SYSTEM ========== */}
+
+        {/* Compose Email */}
+        <Route
+          path="manage/compose-email"
+          element={
+            <RoleGate permission="manage.members">
+              <ComposeEmail />
+            </RoleGate>
+          }
+        />
+
+        {/* Email History/Logs */}
+        <Route
+          path="manage/email-logs"
+          element={
+            <RoleGate permission="manage.members">
+              <EmailLogs />
+            </RoleGate>
+          }
+        />
+
+        {/* ========== ADMINISTRATION SECTION ========== */}
+
+        {/* User Management */}
         <Route
           path="manage/users"
           element={
@@ -164,18 +214,19 @@ function App() {
           }
         />
 
+        {/* Catch-all for dashboard routes */}
         <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
       </Route>
 
-      {/* ================= 404 ================= */}
+      {/* ================= 404 NOT FOUND ================= */}
       <Route
         path="*"
         element={
           <div className="min-h-screen flex items-center justify-center bg-gray-50">
             <div className="text-center">
               <h1 className="text-6xl font-bold text-primary mb-4">404</h1>
-              <p className="text-gray mb-6">Page not found</p>
-              <a href="/" className="btn-primary">
+              <p className="text-xl text-gray mb-6">Page not found</p>
+              <a href="/" className="btn-primary inline-block px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-semibold">
                 Go Home
               </a>
             </div>
