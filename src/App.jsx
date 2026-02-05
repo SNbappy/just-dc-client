@@ -1,40 +1,41 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from "react-router-dom";
 
 // Layouts
-import MainLayout from './layouts/MainLayout';
-import UserDashboardLayout from './layouts/UserDashboardLayout';
+import MainLayout from "./layouts/MainLayout";
+import UserDashboardLayout from "./layouts/UserDashboardLayout";
 
 // Public Pages
-import Home from './pages/Home';
-import About from './pages/About';
-import Events from './pages/Events';
-import EventDetails from './pages/EventDetails';
-import Gallery from './pages/Gallery';
-import Contact from './pages/Contact';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Events from "./pages/Events";
+import EventDetails from "./pages/EventDetails"; // ✅ NEW
+import Gallery from "./pages/Gallery";
+import Contact from "./pages/Contact";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 // Payment Pages
-import Payments from './pages/Payments';
-import PaymentSuccess from './pages/PaymentSuccess';
-import PaymentFailed from './pages/PaymentFailed';
-import PaymentCancelled from './pages/PaymentCancelled';
+import Payments from "./pages/Payments";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
+import PaymentCancelled from "./pages/PaymentCancelled";
 
 // Profile
-import Profile from './pages/Profile';
+import Profile from "./pages/Profile";
 
 // Dashboard Pages
-import DashboardHome from './pages/dashboard/DashboardHome';
+import DashboardHome from "./pages/dashboard/DashboardHome";
 
-// Management Pages (role-gated inside dashboard)
-import EventsManagement from './pages/admin/EventsManagement';
-import Members from './pages/admin/Members';
-import GalleryManagement from './pages/admin/GalleryManagement';
-import UserManagement from './pages/admin/UserManagement';
+// Management Pages
+import EventsManagement from "./pages/admin/EventsManagement";
+import EventRegistrations from "./pages/admin/EventRegistrations"; // ✅ NEW
+import Members from "./pages/admin/Members";
+import GalleryManagement from "./pages/admin/GalleryManagement";
+import UserManagement from "./pages/admin/UserManagement";
 
 // Components
-import ProtectedRoute from './components/common/ProtectedRoute';
-import RoleGate from './components/common/RoleGate';
+import ProtectedRoute from "./components/common/ProtectedRoute";
+import RoleGate from "./components/common/RoleGate";
 
 function App() {
   return (
@@ -43,11 +44,8 @@ function App() {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />
-
-        {/* Events list + details */}
         <Route path="events" element={<Events />} />
-        <Route path="events/:id" element={<EventDetails />} />
-
+        <Route path="events/:id" element={<EventDetails />} /> {/* ✅ NEW */}
         <Route path="gallery" element={<Gallery />} />
         <Route path="contact" element={<Contact />} />
       </Route>
@@ -78,10 +76,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* Default dashboard route */}
         <Route index element={<Navigate to="/dashboard/home" replace />} />
 
-        {/* Dashboard Pages */}
         <Route
           path="home"
           element={
@@ -131,6 +127,16 @@ function App() {
           }
         />
 
+        {/* ✅ NEW: Registrations page for a specific event */}
+        <Route
+          path="manage/events/:id/registrations"
+          element={
+            <RoleGate permission="manage.events">
+              <EventRegistrations />
+            </RoleGate>
+          }
+        />
+
         <Route
           path="manage/gallery"
           element={
@@ -158,7 +164,6 @@ function App() {
           }
         />
 
-        {/* If inside dashboard user hits unknown route */}
         <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
       </Route>
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
     FaPlus,
     FaEdit,
@@ -10,9 +10,14 @@ import {
     FaTimes,
     FaUserPlus,
     FaExternalLinkAlt,
+    FaUsers,
+    FaMoneyBillWave,
+    FaLock,
+    FaUnlock,
 } from "react-icons/fa";
 import api from "../../services/api";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 const PARTICIPANT_ROLES = [
     { value: "organizer", label: "Organizer" },
@@ -36,7 +41,7 @@ const EventsManagement = () => {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [imagePreview, setImagePreview] = useState("");
 
-    // ===== NEW: user search for internal participants =====
+    // ===== user search for internal participants =====
     const [userSearch, setUserSearch] = useState("");
     const [userSearchLoading, setUserSearchLoading] = useState(false);
     const [userResults, setUserResults] = useState([]);
@@ -51,7 +56,12 @@ const EventsManagement = () => {
         maxParticipants: "",
         image: "",
 
-        // ===== NEW: participants =====
+        // ✅ NEW: registration setup
+        accessType: "public",        // public | inter_club
+        registrationFee: 0,          // number
+        registrationOpen: true,      // boolean
+
+        // participants
         participants: [], // [{ role, type, userId?, name?, designation?, org? }]
     });
 
@@ -89,10 +99,20 @@ const EventsManagement = () => {
         return matchesSearch;
     });
 
-    // Handle form change
+    // Handle form change (supports checkbox too)
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+
+        const val = type === "checkbox" ? checked : value;
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]:
+                name === "registrationFee"
+                    ? Number(val || 0)
+                    : val,
+        }));
+
         if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
     };
 
@@ -104,6 +124,10 @@ const EventsManagement = () => {
         if (!formData.date) newErrors.date = "Date is required";
         if (!formData.time) newErrors.time = "Time is required";
         if (!formData.location.trim()) newErrors.location = "Location is required";
+
+        // ✅ optional checks
+        if (formData.registrationFee < 0) newErrors.registrationFee = "Fee cannot be negative";
+
         return newErrors;
     };
 
@@ -152,7 +176,7 @@ const EventsManagement = () => {
         setImagePreview("");
     };
 
-    // ===== NEW: Internal User Search (for participant type=internal) =====
+    // ===== Internal User Search (for participant type=internal) =====
     useEffect(() => {
         const run = async () => {
             const q = userSearch.trim();
@@ -163,7 +187,6 @@ const EventsManagement = () => {
 
             setUserSearchLoading(true);
             try {
-                // ✅ Uses your existing GET /api/users?search=...
                 const res = await api.get("/users", { params: { search: q } });
                 setUserResults(res?.data?.data || []);
             } catch (e) {
@@ -178,7 +201,7 @@ const EventsManagement = () => {
         return () => clearTimeout(t);
     }, [userSearch]);
 
-    // ===== NEW: Participants helpers =====
+    // ===== Participants helpers =====
     const addExternalParticipant = () => {
         setFormData((prev) => ({
             ...prev,
@@ -192,7 +215,6 @@ const EventsManagement = () => {
     const addInternalParticipant = (user) => {
         if (!user?.id) return;
 
-        // prevent duplicates by same userId+role (simple)
         const exists = formData.participants.some(
             (p) => p.type === "internal" && String(p.userId) === String(user.id)
         );
@@ -257,6 +279,11 @@ const EventsManagement = () => {
         const payload = {
             ...formData,
             participants: cleanedParticipants,
+
+            // ensure types
+            registrationFee: Number(formData.registrationFee || 0),
+            registrationOpen: Boolean(formData.registrationOpen),
+            accessType: formData.accessType || "public",
         };
 
         try {
@@ -303,6 +330,12 @@ const EventsManagement = () => {
             category: "workshop",
             maxParticipants: "",
             image: "",
+
+            // ✅ NEW: registration setup defaults
+            accessType: "public",
+            registrationFee: 0,
+            registrationOpen: true,
+
             participants: [],
         });
         setErrors({});
@@ -326,7 +359,11 @@ const EventsManagement = () => {
             maxParticipants: event.maxParticipants || "",
             image: event.image || "",
 
-            // if backend returns participants, keep it; else []
+            // ✅ NEW: load existing
+            accessType: event.accessType || "public",
+            registrationFee: Number(event.registrationFee || 0),
+            registrationOpen: event.registrationOpen !== undefined ? Boolean(event.registrationOpen) : true,
+
             participants: Array.isArray(event.participants) ? event.participants : [],
         });
 
@@ -349,7 +386,10 @@ const EventsManagement = () => {
 
     const eventIdKey = (ev) => ev.id ?? ev._id;
 
-    // ===== Render =====
+    const accessLabel = (ev) => (ev.accessType === "inter_club" ? "Inter Club" : "Public");
+    const feeLabel = (ev) => (Number(ev.registrationFee || 0) === 0 ? "Free" : `${ev.registrationFee}৳`);
+
+    // Render
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -398,8 +438,8 @@ const EventsManagement = () => {
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-6 py-3 rounded-xl font-semibold transition-colors ${filter === f
-                                        ? "bg-primary text-white"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    ? "bg-primary text-white"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     }`}
                             >
                                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -424,9 +464,30 @@ const EventsManagement = () => {
                                     <FaCalendar className="text-6xl text-white opacity-50" />
                                 </div>
                             )}
-                            <div className="absolute top-4 right-4">
+
+                            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
                                 <span className="px-3 py-1 bg-white text-primary text-sm font-semibold rounded-full">
                                     {event.category}
+                                </span>
+
+                                {/* ✅ NEW badges */}
+                                <span className="px-3 py-1 bg-white text-dark text-sm font-semibold rounded-full flex items-center gap-2">
+                                    {event.accessType === "inter_club" ? <FaLock /> : <FaUnlock />}
+                                    {accessLabel(event)}
+                                </span>
+
+                                <span className="px-3 py-1 bg-white text-dark text-sm font-semibold rounded-full flex items-center gap-2">
+                                    <FaMoneyBillWave />
+                                    {feeLabel(event)}
+                                </span>
+
+                                <span
+                                    className={`px-3 py-1 text-sm font-semibold rounded-full ${event.registrationOpen
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                        }`}
+                                >
+                                    {event.registrationOpen ? "Registration Open" : "Registration Closed"}
                                 </span>
                             </div>
                         </div>
@@ -455,6 +516,17 @@ const EventsManagement = () => {
                                     <FaMapMarkerAlt className="text-primary" />
                                     {event.location}
                                 </div>
+                            </div>
+
+                            {/* ✅ NEW: management button */}
+                            <div className="mb-3">
+                                <Link
+                                    to={`/dashboard/manage/events/${eventIdKey(event)}/registrations`}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-dark text-white font-semibold rounded-xl hover:opacity-90 transition"
+                                >
+                                    <FaUsers />
+                                    Registrations
+                                </Link>
                             </div>
 
                             <div className="flex gap-2">
@@ -614,6 +686,53 @@ const EventsManagement = () => {
                                 </div>
                             </div>
 
+                            {/* ✅ NEW: Registration Setup */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-dark mb-2">Access Type</label>
+                                    <select
+                                        name="accessType"
+                                        value={formData.accessType}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
+                                    >
+                                        <option value="public">Public</option>
+                                        <option value="inter_club">Inter Club (Login required)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-dark mb-2">Registration Fee</label>
+                                    <input
+                                        type="number"
+                                        name="registrationFee"
+                                        value={formData.registrationFee}
+                                        onChange={handleChange}
+                                        className={`w-full px-4 py-3 rounded-xl border-2 ${errors.registrationFee ? "border-red-500" : "border-gray-200"
+                                            } focus:border-primary focus:outline-none`}
+                                        placeholder="0"
+                                    />
+                                    {errors.registrationFee && (
+                                        <p className="mt-1 text-sm text-red-500">{errors.registrationFee}</p>
+                                    )}
+                                    <p className="text-xs text-gray mt-1">0 means free registration.</p>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-7">
+                                    <input
+                                        id="registrationOpen"
+                                        type="checkbox"
+                                        name="registrationOpen"
+                                        checked={formData.registrationOpen}
+                                        onChange={handleChange}
+                                        className="h-5 w-5"
+                                    />
+                                    <label htmlFor="registrationOpen" className="text-sm font-semibold text-dark">
+                                        Registration Open
+                                    </label>
+                                </div>
+                            </div>
+
                             {/* Image Upload */}
                             <div>
                                 <label className="block text-sm font-semibold text-dark mb-2">Event Image</label>
@@ -652,7 +771,7 @@ const EventsManagement = () => {
                                 <p className="text-xs text-gray mt-2">Max file size: 10MB. Supports: JPG, PNG, WEBP</p>
                             </div>
 
-                            {/* ================= NEW: People / Participants ================= */}
+                            {/* People / Participants */}
                             <div className="border-t pt-6">
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
