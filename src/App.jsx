@@ -1,4 +1,4 @@
-// App.jsx
+// src/App.jsx - COMPLETE VERSION
 import { Routes, Route, Navigate } from "react-router-dom";
 
 // Layouts
@@ -16,6 +16,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyCertificate from "./pages/VerifyCertificate";
 
+// ✅ NEW: Registration Pages
+import EventRegistration from "./pages/EventRegistrations";
+import TrackRegistration from "./pages/TrackRegistration";
+
 // Payment Pages
 import Payments from "./pages/Payments";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -28,6 +32,7 @@ import Profile from "./pages/Profile";
 // Dashboard Pages
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import MyCertificates from "./pages/dashboard/MyCertificates";
+import MyRegistrations from "./pages/dashboard/MyRegistrations"; // ✅ NEW
 
 // Management Pages
 import EventsManagement from "./pages/admin/EventsManagement";
@@ -36,7 +41,7 @@ import Members from "./pages/admin/Members";
 import GalleryManagement from "./pages/admin/GalleryManagement";
 import UserManagement from "./pages/admin/UserManagement";
 
-// ✅ Email System
+// Email System
 import ComposeEmail from './pages/admin/ComposeEmail';
 import EmailLogs from './pages/admin/EmailLogs';
 
@@ -56,11 +61,17 @@ function App() {
         <Route path="gallery" element={<Gallery />} />
         <Route path="contact" element={<Contact />} />
         <Route path="verify-certificate" element={<VerifyCertificate />} />
+
+        {/* ✅ NEW: Track Registration (Public) */}
+        <Route path="track-registration" element={<TrackRegistration />} />
       </Route>
 
       {/* ================= AUTH ROUTES ================= */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      {/* ================= ✅ NEW: EVENT REGISTRATION (Outside Main Layout) ================= */}
+      <Route path="/events/:eventId/register" element={<EventRegistration />} />
 
       {/* ================= PAYMENTS ROUTES ================= */}
       <Route
@@ -102,6 +113,16 @@ function App() {
           element={
             <RoleGate permission="dashboard.profile">
               <Profile />
+            </RoleGate>
+          }
+        />
+
+        {/* ✅ NEW: My Registrations */}
+        <Route
+          path="registrations"
+          element={
+            <RoleGate permission="dashboard.profile">
+              <MyRegistrations />
             </RoleGate>
           }
         />

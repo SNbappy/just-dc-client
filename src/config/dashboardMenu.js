@@ -9,8 +9,9 @@ import {
     FaUserShield,
     FaTasks,
     FaCertificate,
-    FaEnvelope, // ✅ NEW
-    FaHistory, // ✅ NEW
+    FaEnvelope,
+    FaHistory,
+    FaTicketAlt, // ✅ NEW
 } from 'react-icons/fa';
 
 export const DASHBOARD_MENU = [
@@ -27,6 +28,15 @@ export const DASHBOARD_MENU = [
         label: 'My Profile',
         path: '/dashboard/profile',
         icon: FaUser,
+        roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
+    },
+
+    // ✅ NEW: My Registrations
+    {
+        key: 'registrations',
+        label: 'My Registrations',
+        path: '/dashboard/registrations',
+        icon: FaTicketAlt,
         roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
@@ -79,9 +89,7 @@ export const DASHBOARD_MENU = [
         roles: ['executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // ===================== TOP MANAGEMENT (ADMIN + PRESIDENT + GS + MODERATOR) =====================
-
-    // ✅ NEW: Email System
+    // ===================== TOP MANAGEMENT =====================
     {
         key: 'composeEmail',
         label: 'Compose Email',
@@ -97,7 +105,6 @@ export const DASHBOARD_MENU = [
         roles: ['admin', 'president', 'general_secretary', 'moderator'],
     },
 
-    // User Management
     {
         key: 'manageUsers',
         label: 'User Management',
@@ -107,26 +114,23 @@ export const DASHBOARD_MENU = [
     },
 ];
 
-// ✅ Helper function to get accessible menu items for a user
 export const getAccessibleMenuItems = (userRole) => {
     if (!userRole) return [];
     return DASHBOARD_MENU.filter((item) => item.roles.includes(userRole));
 };
 
-// ✅ Helper function to check if user has access to a specific route
 export const hasAccessToRoute = (userRole, routePath) => {
     if (!userRole || !routePath) return false;
     const menuItem = DASHBOARD_MENU.find((item) => item.path === routePath);
     return menuItem ? menuItem.roles.includes(userRole) : false;
 };
 
-// ✅ Get menu sections for better organization
 export const getMenuSections = (userRole) => {
     const accessibleItems = getAccessibleMenuItems(userRole);
 
     return {
         personal: accessibleItems.filter((item) =>
-            ['home', 'profile', 'certificates', 'payments'].includes(item.key)
+            ['home', 'profile', 'registrations', 'certificates', 'payments'].includes(item.key)
         ),
         member: accessibleItems.filter((item) =>
             ['memberTasks'].includes(item.key)
