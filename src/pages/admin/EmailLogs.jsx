@@ -49,9 +49,32 @@ const EmailLogs = () => {
             role: 'By Role',
             individual: 'Individual',
             event: 'Event Participants',
-            custom: 'Custom List',
+            custom: 'Custom Email',
         };
         return labels[type] || type;
+    };
+
+    // ✅ NEW: Helper to safely parse recipients
+    const getRecipients = (log) => {
+        if (!log || !log.recipients) return [];
+
+        // If it's already an array, return it
+        if (Array.isArray(log.recipients)) {
+            return log.recipients;
+        }
+
+        // If it's a string, try to parse it
+        if (typeof log.recipients === 'string') {
+            try {
+                const parsed = JSON.parse(log.recipients);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.error('Failed to parse recipients:', error);
+                return [];
+            }
+        }
+
+        return [];
     };
 
     if (loading) {
@@ -71,7 +94,7 @@ const EmailLogs = () => {
                 </div>
                 <Link
                     to="/dashboard/manage/compose-email"
-                    className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-semibold"
+                    className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-semibold transition-all"
                 >
                     Compose Email
                 </Link>
@@ -83,7 +106,7 @@ const EmailLogs = () => {
                     <p className="text-gray text-lg mb-4">No emails sent yet</p>
                     <Link
                         to="/dashboard/manage/compose-email"
-                        className="inline-block px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-semibold"
+                        className="inline-block px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark font-semibold transition-all"
                     >
                         Send Your First Email
                     </Link>
@@ -104,7 +127,7 @@ const EmailLogs = () => {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                                 {logs.map((log) => (
-                                    <tr key={log.id} className="hover:bg-gray-50">
+                                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 text-sm text-gray">
                                             {new Date(log.createdAt).toLocaleDateString('en-US', {
                                                 year: 'numeric',
@@ -116,7 +139,7 @@ const EmailLogs = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <p className="font-semibold text-dark line-clamp-1">{log.subject}</p>
-                                            <p className="text-xs text-gray">
+                                            <p className="text-xs text-gray mt-1">
                                                 {getRecipientTypeLabel(log.recipientType)}
                                             </p>
                                         </td>
@@ -142,7 +165,7 @@ const EmailLogs = () => {
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={() => viewLog(log.id)}
-                                                className="px-3 py-1 bg-gray-100 text-dark rounded-lg text-sm font-semibold hover:bg-gray-200 inline-flex items-center gap-2"
+                                                className="px-3 py-1 bg-gray-100 text-dark rounded-lg text-sm font-semibold hover:bg-gray-200 inline-flex items-center gap-2 transition-all"
                                             >
                                                 <FaEye />
                                                 View
@@ -162,14 +185,14 @@ const EmailLogs = () => {
                     <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
                         <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white z-10">
                             <h3 className="text-2xl font-bold text-dark">Email Details</h3>
-                            <button onClick={closeModal} className="text-gray-500 hover:text-dark">
+                            <button onClick={closeModal} className="text-gray-500 hover:text-dark transition-colors">
                                 <FaTimes size={20} />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {/* Basic Info */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm text-gray mb-1">Sent By</p>
                                     <p className="font-semibold text-dark">
@@ -180,7 +203,13 @@ const EmailLogs = () => {
                                 <div>
                                     <p className="text-sm text-gray mb-1">Date</p>
                                     <p className="font-semibold text-dark">
-                                        {new Date(selectedLog.createdAt).toLocaleString()}
+                                        {new Date(selectedLog.createdAt).toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        })}
                                     </p>
                                 </div>
                                 <div>
@@ -209,26 +238,33 @@ const EmailLogs = () => {
                                 </div>
                             </div>
 
-                            {/* Recipients */}
+                            {/* ✅ FIXED: Recipients */}
                             <div>
                                 <p className="text-sm text-gray mb-2">
-                                    Recipients ({selectedLog.recipients?.length || 0})
+                                    Recipients ({getRecipients(selectedLog).length})
                                 </p>
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-60 overflow-y-auto">
-                                    {selectedLog.recipients && selectedLog.recipients.length > 0 ? (
+                                    {getRecipients(selectedLog).length > 0 ? (
                                         <div className="space-y-2">
-                                            {selectedLog.recipients.map((recipient, idx) => (
+                                            {getRecipients(selectedLog).map((recipient, idx) => (
                                                 <div
                                                     key={idx}
-                                                    className="flex items-center gap-2 text-sm text-gray"
+                                                    className="flex items-center gap-2 text-sm"
                                                 >
                                                     <FaEnvelope className="text-primary flex-shrink-0" />
-                                                    <span>{recipient.email}</span>
+                                                    <div className="flex-1">
+                                                        {recipient.name && recipient.name !== 'Recipient' && (
+                                                            <span className="font-medium text-dark mr-2">
+                                                                {recipient.name}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-gray">{recipient.email}</span>
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-gray text-sm">No recipients</p>
+                                        <p className="text-gray text-sm text-center py-4">No recipients found</p>
                                     )}
                                 </div>
                             </div>
@@ -248,16 +284,19 @@ const EmailLogs = () => {
                                 <div>
                                     <p className="text-sm text-gray mb-2">Email Preview</p>
                                     <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 max-h-96 overflow-y-auto">
-                                        <div dangerouslySetInnerHTML={{ __html: selectedLog.htmlContent }} />
+                                        <div
+                                            dangerouslySetInnerHTML={{ __html: selectedLog.htmlContent }}
+                                            className="prose prose-sm max-w-none"
+                                        />
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="p-6 border-t">
+                        <div className="p-6 border-t bg-gray-50">
                             <button
                                 onClick={closeModal}
-                                className="w-full px-6 py-3 bg-gray-100 text-dark rounded-xl font-semibold hover:bg-gray-200"
+                                className="w-full px-6 py-3 bg-gray-800 text-white rounded-xl font-semibold hover:bg-gray-900 transition-all"
                             >
                                 Close
                             </button>
