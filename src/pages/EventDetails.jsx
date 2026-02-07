@@ -1,4 +1,4 @@
-// src/pages/EventDetails.jsx - UPDATED VERSION
+// src/pages/EventDetails.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -15,6 +15,9 @@ import {
     FaMicrophone,
     FaUser,
     FaTicketAlt,
+    FaMoneyBillWave,
+    FaUserFriends,
+    FaCheckCircle,
 } from "react-icons/fa";
 
 const roleLabel = (role) => {
@@ -40,7 +43,25 @@ const EventDetails = () => {
             try {
                 setLoading(true);
                 const res = await api.get(`/events/${id}`);
-                setEvent(res.data?.data || null);
+                let eventData = res.data?.data || null;
+
+                // ✅ FIX: Parse categories if it's a JSON string
+                if (eventData && typeof eventData.categories === 'string') {
+                    try {
+                        eventData.categories = JSON.parse(eventData.categories);
+                    } catch (e) {
+                        console.error('Failed to parse categories:', e);
+                        eventData.categories = [];
+                    }
+                }
+
+                // ✅ Ensure categories is always an array
+                if (!Array.isArray(eventData?.categories)) {
+                    eventData.categories = [];
+                }
+
+                console.log('✅ Parsed Categories:', eventData.categories);
+                setEvent(eventData);
             } catch (e) {
                 toast.error("Failed to load event");
             } finally {
@@ -90,10 +111,11 @@ const EventDetails = () => {
                 </div>
             </div>
         );
-    };
+    }
 
     const eventDate = new Date(event.date);
-    const canRegister = Boolean(event.registrationEnabled);
+    const canRegister = Boolean(event.registrationOpen);
+    const categories = event.categories || [];
 
     return (
         <div className="min-h-screen bg-gray-50 py-16">
@@ -124,9 +146,9 @@ const EventDetails = () => {
                     </div>
 
                     <div className="p-6 md:p-8">
-                        <p className="text-gray leading-relaxed text-lg">{event.description}</p>
+                        <p className="text-gray leading-relaxed text-lg mb-6">{event.description}</p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
                                 <FaCalendar className="text-primary text-xl" />
                                 <div>
@@ -165,31 +187,84 @@ const EventDetails = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* ✅ NEW: Register Button */}
-                        {canRegister && (
-                            <div className="mt-6 p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl border-2 border-primary/20">
-                                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                                    <div className="flex items-center gap-3">
-                                        <FaTicketAlt className="text-primary text-3xl" />
-                                        <div>
-                                            <p className="font-bold text-lg text-dark">Ready to participate?</p>
-                                            <p className="text-sm text-gray">Register now and secure your spot!</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => navigate(`/events/${event.id || event._id}/register`)}
-                                        className="px-8 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-bold hover:shadow-lg transition-all whitespace-nowrap"
-                                    >
-                                        Register Now →
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* Event Team Section (unchanged) */}
+                {/* ✅ Registration Categories Section */}
+                {canRegister && categories.length > 0 && (
+                    <div className="mt-8 bg-white rounded-2xl shadow-md p-6 md:p-8">
+                        <div className="flex items-center gap-3 mb-6">
+                            <FaTicketAlt className="text-primary text-2xl" />
+                            <div>
+                                <h2 className="font-heading text-2xl font-bold text-dark">Registration Options</h2>
+                                <p className="text-sm text-gray">Choose your registration category</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {categories.map((cat, idx) => (
+                                <div
+                                    key={idx}
+                                    className="border-2 border-gray-200 rounded-xl p-5 hover:border-primary hover:shadow-lg transition-all cursor-pointer group"
+                                    onClick={() => navigate(`/events/${event.id}/register?category=${encodeURIComponent(cat.name)}`)}
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <h3 className="font-bold text-lg text-dark group-hover:text-primary transition-colors">
+                                            {cat.name}
+                                        </h3>
+                                        {cat.type === "team" ? (
+                                            <FaUserFriends className="text-purple-500 text-xl" />
+                                        ) : (
+                                            <FaUser className="text-blue-500 text-xl" />
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2 mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <FaMoneyBillWave className="text-green-500" />
+                                            <span className="font-semibold text-dark">
+                                                {cat.price === 0 ? "Free" : `${cat.price}৳`}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <FaUsers className="text-blue-500" />
+                                            <span className="text-sm text-gray">
+                                                {cat.capacity ? `${cat.capacity} slots` : "Unlimited"}
+                                            </span>
+                                        </div>
+
+                                        {cat.type === "team" && (
+                                            <div className="flex items-center gap-2">
+                                                <FaUserFriends className="text-purple-500" />
+                                                <span className="text-sm text-gray">
+                                                    Team: {cat.teamMin}-{cat.teamMax} members
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2">
+                                            <FaCheckCircle className="text-success" />
+                                            <span className="text-xs text-gray">
+                                                {cat.accessType === "members_only"
+                                                    ? "Members Only"
+                                                    : cat.accessType === "registered_only"
+                                                        ? "Registered Users"
+                                                        : "Open to All"}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button className="w-full py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg font-semibold group-hover:shadow-md transition-all">
+                                        Select →
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Event Team Section */}
                 {Object.keys(grouped).length > 0 && (
                     <div className="mt-8 bg-white rounded-2xl shadow-md p-6 md:p-8">
                         <h2 className="font-heading text-2xl font-bold text-dark mb-6 flex items-center gap-3">

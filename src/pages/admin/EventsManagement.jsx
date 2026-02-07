@@ -1,72 +1,37 @@
-// pages/admin/EventsManagement.jsx
-import { useEffect, useState } from "react";
+// src/pages/admin/EventsManagement.jsx
+import { useEffect, useState } from 'react';
 import {
     FaPlus,
-    FaEdit,
-    FaTrash,
-    FaCalendar,
-    FaMapMarkerAlt,
-    FaClock,
     FaSearch,
-    FaTimes,
-    FaUserPlus,
-    FaExternalLinkAlt,
-    FaUsers,
-    FaMoneyBillWave,
-    FaLock,
-    FaUnlock,
-} from "react-icons/fa";
-import api from "../../services/api";
-import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
-
-const PARTICIPANT_ROLES = [
-    { value: "organizer", label: "Organizer" },
-    { value: "volunteer", label: "Volunteer" },
-    { value: "core_adjudicator", label: "Core Adjudicator" },
-    { value: "tab_team", label: "Tab Team" },
-    { value: "speaker", label: "Speaker" },
-    { value: "guest", label: "Guest" },
-];
+    FaCalendar,
+} from 'react-icons/fa';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
+import EventCard from '../components/events/EventCard';
+import EventFormModal from '../components/events/EventFormModal';
 
 const EventsManagement = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [showModal, setShowModal] = useState(false);
     const [editingEvent, setEditingEvent] = useState(null);
-
-    const [searchTerm, setSearchTerm] = useState("");
-    const [filter, setFilter] = useState("all");
-
-    const [uploadingImage, setUploadingImage] = useState(false);
-    const [imagePreview, setImagePreview] = useState("");
-
-    // ===== user search for internal participants =====
-    const [userSearch, setUserSearch] = useState("");
-    const [userSearchLoading, setUserSearchLoading] = useState(false);
-    const [userResults, setUserResults] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filter, setFilter] = useState('all');
+    const [errors, setErrors] = useState({});
+    const [imagePreview, setImagePreview] = useState('');
 
     const [formData, setFormData] = useState({
-        title: "",
-        description: "",
-        date: "",
-        time: "",
-        location: "",
-        category: "workshop",
-        maxParticipants: "",
-        image: "",
-
-        // ✅ NEW: registration setup
-        accessType: "public",        // public | inter_club
-        registrationFee: 0,          // number
-        registrationOpen: true,      // boolean
-
-        // participants
-        participants: [], // [{ role, type, userId?, name?, designation?, org? }]
+        title: '',
+        description: '',
+        date: '',
+        time: '',
+        location: '',
+        category: 'workshop',
+        maxParticipants: '',
+        image: '',
+        categories: [],
+        participants: [],
     });
-
-    const [errors, setErrors] = useState({});
 
     // Fetch events
     useEffect(() => {
@@ -76,12 +41,36 @@ const EventsManagement = () => {
     const fetchEvents = async () => {
         try {
             setLoading(true);
-            const response = await api.get("/events");
-            setEvents(response?.data?.data || []);
+            const response = await api.get('/events');
+            const eventsData = response?.data?.data || [];
+
+            // ✅ DEBUG: Check the first event's structure
+            if (eventsData.length > 0) {
+                const firstEvent = eventsData[0];
+                console.log('🔍 BACKEND RESPONSE - First Event:');
+                console.log('- ID:', firstEvent.id || firstEvent._id);
+                console.log('- Title:', firstEvent.title);
+                console.log('- Categories Type:', typeof firstEvent.categories);
+                console.log('- Categories Value:', firstEvent.categories);
+                console.log('- Participants Type:', typeof firstEvent.participants);
+                console.log('- Participants Value:', firstEvent.participants);
+
+                // Try parsing if string
+                if (typeof firstEvent.categories === 'string') {
+                    try {
+                        const parsed = JSON.parse(firstEvent.categories);
+                        console.log('✅ Parsed Categories:', parsed);
+                    } catch (e) {
+                        console.error('❌ Cannot parse categories:', e);
+                    }
+                }
+            }
+
+            setEvents(eventsData);
         } catch (error) {
-            console.error("Error fetching events:", error);
+            console.error('Error fetching events:', error);
             setEvents([]);
-            toast.error("Failed to fetch events");
+            toast.error('Failed to fetch events');
         } finally {
             setLoading(false);
         }
@@ -89,232 +78,27 @@ const EventsManagement = () => {
 
     // Filter events
     const filteredEvents = events.filter((event) => {
-        const matchesSearch = (event.title || "")
+        const matchesSearch = (event.title || '')
             .toLowerCase()
             .includes(searchTerm.toLowerCase());
         const eventDate = new Date(event.date);
         const today = new Date();
 
-        if (filter === "upcoming") return matchesSearch && eventDate >= today;
-        if (filter === "past") return matchesSearch && eventDate < today;
+        if (filter === 'upcoming') return matchesSearch && eventDate >= today;
+        if (filter === 'past') return matchesSearch && eventDate < today;
         return matchesSearch;
     });
 
-    // Handle form change (supports checkbox too)
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-
-        const val = type === "checkbox" ? checked : value;
-
-        setFormData((prev) => ({
-            ...prev,
-            [name]:
-                name === "registrationFee"
-                    ? Number(val || 0)
-                    : val,
-        }));
-
-        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
-    };
-
-    // Validate form
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.title.trim()) newErrors.title = "Title is required";
-        if (!formData.description.trim()) newErrors.description = "Description is required";
-        if (!formData.date) newErrors.date = "Date is required";
-        if (!formData.time) newErrors.time = "Time is required";
-        if (!formData.location.trim()) newErrors.location = "Location is required";
-
-        // ✅ optional checks
-        if (formData.registrationFee < 0) newErrors.registrationFee = "Fee cannot be negative";
-
-        return newErrors;
-    };
-
-    // Handle image upload
-    const handleImageUpload = async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        if (!file.type.startsWith("image/")) {
-            toast.error("Please select an image file");
-            return;
-        }
-
-        if (file.size > 10 * 1024 * 1024) {
-            toast.error("Image size should not exceed 10MB");
-            return;
-        }
-
-        setUploadingImage(true);
-
-        try {
-            const formDataImg = new FormData();
-            formDataImg.append("image", file);
-            formDataImg.append("folder", "just-dc/events");
-
-            const response = await api.post("/upload", formDataImg, {
-                headers: { "Content-Type": "multipart/form-data" },
-            });
-
-            const imageUrl = response?.data?.data?.url;
-            if (!imageUrl) throw new Error("Upload response missing url");
-
-            setFormData((prev) => ({ ...prev, image: imageUrl }));
-            setImagePreview(imageUrl);
-            toast.success("Image uploaded successfully!");
-        } catch (error) {
-            console.error("Error uploading image:", error);
-            toast.error("Failed to upload image");
-        } finally {
-            setUploadingImage(false);
-        }
-    };
-
-    const handleRemoveImage = () => {
-        setFormData((prev) => ({ ...prev, image: "" }));
-        setImagePreview("");
-    };
-
-    // ===== Internal User Search (for participant type=internal) =====
-    useEffect(() => {
-        const run = async () => {
-            const q = userSearch.trim();
-            if (!q) {
-                setUserResults([]);
-                return;
-            }
-
-            setUserSearchLoading(true);
-            try {
-                const res = await api.get("/users", { params: { search: q } });
-                setUserResults(res?.data?.data || []);
-            } catch (e) {
-                console.error(e);
-                setUserResults([]);
-            } finally {
-                setUserSearchLoading(false);
-            }
-        };
-
-        const t = setTimeout(run, 300);
-        return () => clearTimeout(t);
-    }, [userSearch]);
-
-    // ===== Participants helpers =====
-    const addExternalParticipant = () => {
-        setFormData((prev) => ({
-            ...prev,
-            participants: [
-                ...prev.participants,
-                { role: "volunteer", type: "external", name: "", designation: "", org: "" },
-            ],
-        }));
-    };
-
-    const addInternalParticipant = (user) => {
-        if (!user?.id) return;
-
-        const exists = formData.participants.some(
-            (p) => p.type === "internal" && String(p.userId) === String(user.id)
-        );
-        if (exists) {
-            toast("User already added");
-            return;
-        }
-
-        setFormData((prev) => ({
-            ...prev,
-            participants: [
-                ...prev.participants,
-                { role: "volunteer", type: "internal", userId: user.id, user },
-            ],
-        }));
-        toast.success("Added");
-    };
-
-    const updateParticipant = (idx, patch) => {
-        setFormData((prev) => {
-            const copy = [...prev.participants];
-            copy[idx] = { ...copy[idx], ...patch };
-            return { ...prev, participants: copy };
-        });
-    };
-
-    const removeParticipant = (idx) => {
-        setFormData((prev) => {
-            const copy = [...prev.participants];
-            copy.splice(idx, 1);
-            return { ...prev, participants: copy };
-        });
-    };
-
-    const roleLabel = (role) =>
-        PARTICIPANT_ROLES.find((r) => r.value === role)?.label || role;
-
-    // Handle submit (Create/Update)
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        const newErrors = validateForm();
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            return;
-        }
-
-        // Clean participants before send
-        const cleanedParticipants = (formData.participants || []).map((p) => {
-            if (p.type === "internal") {
-                return { role: p.role, type: "internal", userId: p.userId };
-            }
-            return {
-                role: p.role,
-                type: "external",
-                name: (p.name || "").trim(),
-                designation: (p.designation || "").trim(),
-                org: (p.org || "").trim(),
-            };
-        });
-
-        const payload = {
-            ...formData,
-            participants: cleanedParticipants,
-
-            // ensure types
-            registrationFee: Number(formData.registrationFee || 0),
-            registrationOpen: Boolean(formData.registrationOpen),
-            accessType: formData.accessType || "public",
-        };
-
-        try {
-            if (editingEvent) {
-                const id = editingEvent.id ?? editingEvent._id;
-                await api.put(`/events/${id}`, payload);
-                toast.success("Event updated");
-            } else {
-                await api.post("/events", payload);
-                toast.success("Event created");
-            }
-
-            fetchEvents();
-            closeModal();
-        } catch (error) {
-            console.error("Error saving event:", error);
-            toast.error(error?.response?.data?.message || "Error saving event");
-        }
-    };
-
     // Handle delete
     const handleDelete = async (id) => {
-        if (window.confirm("Are you sure you want to delete this event?")) {
+        if (window.confirm('Are you sure you want to delete this event?')) {
             try {
                 await api.delete(`/events/${id}`);
-                toast.success("Event deleted");
+                toast.success('Event deleted');
                 fetchEvents();
             } catch (error) {
-                console.error("Error deleting event:", error);
-                toast.error("Error deleting event");
+                console.error('Error deleting event:', error);
+                toast.error(error?.response?.data?.message || 'Error deleting event');
             }
         }
     };
@@ -323,55 +107,92 @@ const EventsManagement = () => {
     const openCreateModal = () => {
         setEditingEvent(null);
         setFormData({
-            title: "",
-            description: "",
-            date: "",
-            time: "",
-            location: "",
-            category: "workshop",
-            maxParticipants: "",
-            image: "",
-
-            // ✅ NEW: registration setup defaults
-            accessType: "public",
-            registrationFee: 0,
-            registrationOpen: true,
-
+            title: '',
+            description: '',
+            date: '',
+            time: '',
+            location: '',
+            category: 'workshop',
+            maxParticipants: '',
+            image: '',
+            categories: [],
             participants: [],
         });
         setErrors({});
-        setImagePreview("");
-        setUserSearch("");
-        setUserResults([]);
+        setImagePreview('');
         setShowModal(true);
     };
 
     // Open modal for edit
     const openEditModal = (event) => {
+        console.log('🔍 RAW EVENT DATA:', event);
+
         setEditingEvent(event);
 
-        setFormData({
-            title: event.title || "",
-            description: event.description || "",
-            date: event.date ? String(event.date).split("T")[0] : "",
-            time: event.time || "",
-            location: event.location || "",
-            category: event.category || "workshop",
-            maxParticipants: event.maxParticipants || "",
-            image: event.image || "",
+        // ✅ FIXED: Properly parse categories
+        let categories = [];
+        if (event.categories) {
+            console.log('📦 Categories Type:', typeof event.categories);
+            console.log('📦 Categories Value:', event.categories);
 
-            // ✅ NEW: load existing
-            accessType: event.accessType || "public",
-            registrationFee: Number(event.registrationFee || 0),
-            registrationOpen: event.registrationOpen !== undefined ? Boolean(event.registrationOpen) : true,
+            if (typeof event.categories === 'string') {
+                try {
+                    // Try parsing as JSON string
+                    const parsed = JSON.parse(event.categories);
+                    categories = Array.isArray(parsed) ? parsed : [];
+                    console.log('✅ Parsed categories from string:', categories);
+                } catch (e) {
+                    console.error('❌ Error parsing categories:', e);
+                    categories = [];
+                }
+            } else if (Array.isArray(event.categories)) {
+                categories = event.categories;
+                console.log('✅ Categories already array:', categories);
+            }
+        }
 
-            participants: Array.isArray(event.participants) ? event.participants : [],
-        });
+        // ✅ FIXED: Properly parse participants
+        let participants = [];
+        if (event.participants) {
+            console.log('👥 Participants Type:', typeof event.participants);
+            console.log('👥 Participants Value:', event.participants);
 
+            if (typeof event.participants === 'string') {
+                try {
+                    const parsed = JSON.parse(event.participants);
+                    participants = Array.isArray(parsed) ? parsed : [];
+                    console.log('✅ Parsed participants from string:', participants);
+                } catch (e) {
+                    console.error('❌ Error parsing participants:', e);
+                    participants = [];
+                }
+            } else if (Array.isArray(event.participants)) {
+                participants = event.participants;
+                console.log('✅ Participants already array:', participants);
+            }
+        }
+
+        // Set form data with parsed values
+        const newFormData = {
+            title: event.title || '',
+            description: event.description || '',
+            date: event.date ? String(event.date).split('T')[0] : '',
+            time: event.time || '',
+            location: event.location || '',
+            category: event.category || 'workshop',
+            maxParticipants: event.maxParticipants || '',
+            image: event.image || '',
+            categories: categories,
+            participants: participants,
+        };
+
+        console.log('✅ FINAL FORM DATA:', newFormData);
+        console.log('📊 Categories Count:', categories.length);
+        console.log('👥 Participants Count:', participants.length);
+
+        setFormData(newFormData);
         setErrors({});
-        setImagePreview(event.image || "");
-        setUserSearch("");
-        setUserResults([]);
+        setImagePreview(event.image || '');
         setShowModal(true);
     };
 
@@ -380,15 +201,33 @@ const EventsManagement = () => {
         setShowModal(false);
         setEditingEvent(null);
         setErrors({});
-        setImagePreview("");
-        setUserSearch("");
-        setUserResults([]);
+        setImagePreview('');
     };
 
-    const eventIdKey = (ev) => ev.id ?? ev._id;
+    // Handle form submit
+    const handleFormSubmit = async (data) => {
+        try {
+            if (editingEvent) {
+                const id = editingEvent.id ?? editingEvent._id;
+                console.log('📤 UPDATING EVENT:', id);
+                console.log('📤 PAYLOAD:', data);
+                await api.put(`/events/${id}`, data);
+                toast.success('Event updated successfully');
+            } else {
+                console.log('📤 CREATING EVENT');
+                console.log('📤 PAYLOAD:', data);
+                await api.post('/events', data);
+                toast.success('Event created successfully');
+            }
 
-    const accessLabel = (ev) => (ev.accessType === "inter_club" ? "Inter Club" : "Public");
-    const feeLabel = (ev) => (Number(ev.registrationFee || 0) === 0 ? "Free" : `${ev.registrationFee}৳`);
+            fetchEvents();
+            closeModal();
+        } catch (error) {
+            console.error('Error saving event:', error);
+            console.error('Error response:', error?.response?.data);
+            throw error; // Let the modal handle the error
+        }
+    };
 
     // Render
     if (loading) {
@@ -434,13 +273,13 @@ const EventsManagement = () => {
                     </div>
 
                     <div className="flex gap-2">
-                        {["all", "upcoming", "past"].map((f) => (
+                        {['all', 'upcoming', 'past'].map((f) => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
                                 className={`px-6 py-3 rounded-xl font-semibold transition-colors ${filter === f
-                                        ? "bg-primary text-white"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                        ? 'bg-primary text-white'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -453,101 +292,12 @@ const EventsManagement = () => {
             {/* Events Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredEvents.map((event) => (
-                    <div
-                        key={eventIdKey(event)}
-                        className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
-                    >
-                        <div className="h-48 bg-gradient-to-br from-primary to-secondary relative">
-                            {event.image ? (
-                                <img src={event.image} alt={event.title} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <FaCalendar className="text-6xl text-white opacity-50" />
-                                </div>
-                            )}
-
-                            <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
-                                <span className="px-3 py-1 bg-white text-primary text-sm font-semibold rounded-full">
-                                    {event.category}
-                                </span>
-
-                                {/* ✅ NEW badges */}
-                                <span className="px-3 py-1 bg-white text-dark text-sm font-semibold rounded-full flex items-center gap-2">
-                                    {event.accessType === "inter_club" ? <FaLock /> : <FaUnlock />}
-                                    {accessLabel(event)}
-                                </span>
-
-                                <span className="px-3 py-1 bg-white text-dark text-sm font-semibold rounded-full flex items-center gap-2">
-                                    <FaMoneyBillWave />
-                                    {feeLabel(event)}
-                                </span>
-
-                                <span
-                                    className={`px-3 py-1 text-sm font-semibold rounded-full ${event.registrationOpen
-                                            ? "bg-green-100 text-green-700"
-                                            : "bg-red-100 text-red-700"
-                                        }`}
-                                >
-                                    {event.registrationOpen ? "Registration Open" : "Registration Closed"}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="p-6">
-                            <h3 className="font-heading font-bold text-xl text-dark mb-3 line-clamp-2">
-                                {event.title}
-                            </h3>
-
-                            <p className="text-gray text-sm mb-4 line-clamp-2">{event.description}</p>
-
-                            <div className="space-y-2 mb-4">
-                                <div className="flex items-center gap-2 text-gray text-sm">
-                                    <FaCalendar className="text-primary" />
-                                    {new Date(event.date).toLocaleDateString("en-US", {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                    })}
-                                </div>
-                                <div className="flex items-center gap-2 text-gray text-sm">
-                                    <FaClock className="text-primary" />
-                                    {event.time}
-                                </div>
-                                <div className="flex items-center gap-2 text-gray text-sm">
-                                    <FaMapMarkerAlt className="text-primary" />
-                                    {event.location}
-                                </div>
-                            </div>
-
-                            {/* ✅ UPDATED: Participants & Certificates button */}
-                            <div className="mb-3">
-                                <Link
-                                    to={`/dashboard/manage/events/${eventIdKey(event)}/participants`}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-dark text-white font-semibold rounded-xl hover:opacity-90 transition"
-                                >
-                                    <FaUsers />
-                                    Participants & Certificates
-                                </Link>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => openEditModal(event)}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-600 font-semibold rounded-xl hover:bg-blue-200 transition-colors"
-                                >
-                                    <FaEdit />
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => handleDelete(eventIdKey(event))}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-600 font-semibold rounded-xl hover:bg-red-200 transition-colors"
-                                >
-                                    <FaTrash />
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <EventCard
+                        key={event.id ?? event._id}
+                        event={event}
+                        onEdit={openEditModal}
+                        onDelete={handleDelete}
+                    />
                 ))}
             </div>
 
@@ -557,392 +307,20 @@ const EventsManagement = () => {
                     <FaCalendar className="text-6xl text-gray-300 mx-auto mb-4" />
                     <h3 className="font-heading font-bold text-xl text-dark mb-2">No events found</h3>
                     <p className="text-gray">
-                        {searchTerm ? "Try a different search term" : "Create your first event to get started"}
+                        {searchTerm ? 'Try a different search term' : 'Create your first event to get started'}
                     </p>
                 </div>
             )}
 
-            {/* Modal */}
+            {/* Event Form Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-                            <h2 className="font-heading font-bold text-2xl text-dark">
-                                {editingEvent ? "Edit Event" : "Create New Event"}
-                            </h2>
-                            <button onClick={closeModal} className="text-gray-400 hover:text-dark transition-colors">
-                                <FaTimes size={24} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                            {/* Title */}
-                            <div>
-                                <label className="block text-sm font-semibold text-dark mb-2">Event Title *</label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleChange}
-                                    className={`w-full px-4 py-3 rounded-xl border-2 ${errors.title ? "border-red-500" : "border-gray-200"
-                                        } focus:border-primary focus:outline-none`}
-                                    placeholder="Enter event title"
-                                />
-                                {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
-                            </div>
-
-                            {/* Description */}
-                            <div>
-                                <label className="block text-sm font-semibold text-dark mb-2">Description *</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    rows="4"
-                                    className={`w-full px-4 py-3 rounded-xl border-2 ${errors.description ? "border-red-500" : "border-gray-200"
-                                        } focus:border-primary focus:outline-none`}
-                                    placeholder="Enter event description"
-                                />
-                                {errors.description && (
-                                    <p className="mt-1 text-sm text-red-500">{errors.description}</p>
-                                )}
-                            </div>
-
-                            {/* Date and Time */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">Date *</label>
-                                    <input
-                                        type="date"
-                                        name="date"
-                                        value={formData.date}
-                                        onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-xl border-2 ${errors.date ? "border-red-500" : "border-gray-200"
-                                            } focus:border-primary focus:outline-none`}
-                                    />
-                                    {errors.date && <p className="mt-1 text-sm text-red-500">{errors.date}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">Time *</label>
-                                    <input
-                                        type="time"
-                                        name="time"
-                                        value={formData.time}
-                                        onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-xl border-2 ${errors.time ? "border-red-500" : "border-gray-200"
-                                            } focus:border-primary focus:outline-none`}
-                                    />
-                                    {errors.time && <p className="mt-1 text-sm text-red-500">{errors.time}</p>}
-                                </div>
-                            </div>
-
-                            {/* Location */}
-                            <div>
-                                <label className="block text-sm font-semibold text-dark mb-2">Location *</label>
-                                <input
-                                    type="text"
-                                    name="location"
-                                    value={formData.location}
-                                    onChange={handleChange}
-                                    className={`w-full px-4 py-3 rounded-xl border-2 ${errors.location ? "border-red-500" : "border-gray-200"
-                                        } focus:border-primary focus:outline-none`}
-                                    placeholder="Enter event location"
-                                />
-                                {errors.location && (
-                                    <p className="mt-1 text-sm text-red-500">{errors.location}</p>
-                                )}
-                            </div>
-
-                            {/* Category and Max Participants */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">Category</label>
-                                    <select
-                                        name="category"
-                                        value={formData.category}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
-                                    >
-                                        <option value="workshop">Workshop</option>
-                                        <option value="tournament">Tournament</option>
-                                        <option value="practice">Practice Session</option>
-                                        <option value="seminar">Seminar</option>
-                                        <option value="competition">Competition</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">
-                                        Max Participants
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="maxParticipants"
-                                        value={formData.maxParticipants}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
-                                        placeholder="50"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* ✅ NEW: Registration Setup */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">Access Type</label>
-                                    <select
-                                        name="accessType"
-                                        value={formData.accessType}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
-                                    >
-                                        <option value="public">Public</option>
-                                        <option value="inter_club">Inter Club (Login required)</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-dark mb-2">Registration Fee</label>
-                                    <input
-                                        type="number"
-                                        name="registrationFee"
-                                        value={formData.registrationFee}
-                                        onChange={handleChange}
-                                        className={`w-full px-4 py-3 rounded-xl border-2 ${errors.registrationFee ? "border-red-500" : "border-gray-200"
-                                            } focus:border-primary focus:outline-none`}
-                                        placeholder="0"
-                                    />
-                                    {errors.registrationFee && (
-                                        <p className="mt-1 text-sm text-red-500">{errors.registrationFee}</p>
-                                    )}
-                                    <p className="text-xs text-gray mt-1">0 means free registration.</p>
-                                </div>
-
-                                <div className="flex items-center gap-3 mt-7">
-                                    <input
-                                        id="registrationOpen"
-                                        type="checkbox"
-                                        name="registrationOpen"
-                                        checked={formData.registrationOpen}
-                                        onChange={handleChange}
-                                        className="h-5 w-5"
-                                    />
-                                    <label htmlFor="registrationOpen" className="text-sm font-semibold text-dark">
-                                        Registration Open
-                                    </label>
-                                </div>
-                            </div>
-
-                            {/* Image Upload */}
-                            <div>
-                                <label className="block text-sm font-semibold text-dark mb-2">Event Image</label>
-
-                                {(imagePreview || formData.image) && (
-                                    <div className="mb-4 relative">
-                                        <img
-                                            src={imagePreview || formData.image}
-                                            alt="Preview"
-                                            className="w-full h-48 object-cover rounded-xl"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={handleRemoveImage}
-                                            className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                                        >
-                                            <FaTimes />
-                                        </button>
-                                    </div>
-                                )}
-
-                                <div className="flex gap-2">
-                                    <label className="flex-1 cursor-pointer">
-                                        <div className="px-4 py-3 bg-primary text-white text-center font-semibold rounded-xl hover:bg-primary-dark transition-colors">
-                                            {uploadingImage ? "Uploading..." : "Choose Image"}
-                                        </div>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageUpload}
-                                            disabled={uploadingImage}
-                                            className="hidden"
-                                        />
-                                    </label>
-                                </div>
-                                <p className="text-xs text-gray mt-2">Max file size: 10MB. Supports: JPG, PNG, WEBP</p>
-                            </div>
-
-                            {/* People / Participants */}
-                            <div className="border-t pt-6">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-dark">People (Volunteers, Organizers, etc.)</h3>
-                                        <p className="text-sm text-gray">
-                                            Internal members will be clickable later, external guests won't.
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={addExternalParticipant}
-                                        className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-dark font-semibold flex items-center gap-2"
-                                    >
-                                        <FaUserPlus />
-                                        Add External
-                                    </button>
-                                </div>
-
-                                {/* Internal user search */}
-                                <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                                    <label className="block text-sm font-semibold text-dark mb-2">
-                                        Add Internal Member
-                                    </label>
-                                    <div className="relative">
-                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input
-                                            value={userSearch}
-                                            onChange={(e) => setUserSearch(e.target.value)}
-                                            placeholder="Search by name/email/studentId..."
-                                            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary focus:outline-none"
-                                        />
-                                    </div>
-
-                                    {userSearch && (
-                                        <div className="mt-3 bg-white rounded-xl border border-gray-200 overflow-hidden">
-                                            {userSearchLoading ? (
-                                                <div className="p-4 text-sm text-gray">Searching...</div>
-                                            ) : userResults.length === 0 ? (
-                                                <div className="p-4 text-sm text-gray">No users found</div>
-                                            ) : (
-                                                <div className="max-h-56 overflow-y-auto">
-                                                    {userResults.map((u) => (
-                                                        <div
-                                                            key={u.id ?? u._id}
-                                                            className="flex items-center justify-between p-3 border-b last:border-b-0"
-                                                        >
-                                                            <div>
-                                                                <p className="font-semibold text-dark">{u.name}</p>
-                                                                <p className="text-xs text-gray">{u.email}</p>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => addInternalParticipant(u)}
-                                                                className="px-3 py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary-dark"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Participants list */}
-                                {formData.participants.length === 0 ? (
-                                    <div className="text-sm text-gray italic">No people added yet.</div>
-                                ) : (
-                                    <div className="space-y-3">
-                                        {formData.participants.map((p, idx) => (
-                                            <div key={idx} className="border border-gray-200 rounded-xl p-4">
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <span className="inline-block px-3 py-1 bg-primary text-white text-xs font-semibold rounded-full mb-2">
-                                                            {p.type === "internal" ? "Internal" : "External"}
-                                                        </span>
-                                                        {p.type === "internal" && p.user && (
-                                                            <div>
-                                                                <p className="font-semibold text-dark">{p.user.name}</p>
-                                                                <p className="text-xs text-gray">{p.user.email}</p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeParticipant(idx)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <FaTimes />
-                                                    </button>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <div>
-                                                        <label className="block text-xs font-semibold text-gray mb-1">Role</label>
-                                                        <select
-                                                            value={p.role}
-                                                            onChange={(e) => updateParticipant(idx, { role: e.target.value })}
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
-                                                        >
-                                                            {PARTICIPANT_ROLES.map((r) => (
-                                                                <option key={r.value} value={r.value}>
-                                                                    {r.label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-
-                                                    {p.type === "external" && (
-                                                        <>
-                                                            <div>
-                                                                <label className="block text-xs font-semibold text-gray mb-1">Name</label>
-                                                                <input
-                                                                    value={p.name || ""}
-                                                                    onChange={(e) => updateParticipant(idx, { name: e.target.value })}
-                                                                    placeholder="Full Name"
-                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-xs font-semibold text-gray mb-1">Designation</label>
-                                                                <input
-                                                                    value={p.designation || ""}
-                                                                    onChange={(e) => updateParticipant(idx, { designation: e.target.value })}
-                                                                    placeholder="e.g. Professor, Student"
-                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
-                                                                />
-                                                            </div>
-
-                                                            <div>
-                                                                <label className="block text-xs font-semibold text-gray mb-1">Organization</label>
-                                                                <input
-                                                                    value={p.org || ""}
-                                                                    onChange={(e) => updateParticipant(idx, { org: e.target.value })}
-                                                                    placeholder="e.g. JUST, Dhaka University"
-                                                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:border-primary focus:outline-none text-sm"
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Submit Buttons */}
-                            <div className="flex gap-4 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-6 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-primary-dark transition-colors"
-                                >
-                                    {editingEvent ? "Update Event" : "Create Event"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <EventFormModal
+                    show={showModal}
+                    onClose={closeModal}
+                    initialData={formData}
+                    isEditing={!!editingEvent}
+                    onSubmit={handleFormSubmit}
+                />
             )}
         </div>
     );

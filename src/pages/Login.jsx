@@ -58,12 +58,8 @@ const Login = () => {
 
             // Small delay to ensure state is updated
             setTimeout(() => {
-                // Redirect based on role
-                if (['admin', 'president', 'general_secretary', 'moderator'].includes(user.role)) {
-                    navigate('/admin/dashboard');
-                } else {
-                    navigate('/');
-                }
+                // Redirect to dashboard home
+                navigate('/dashboard/home');
             }, 100);
 
         } catch (error) {
@@ -80,8 +76,8 @@ const Login = () => {
                 <div className="bg-white rounded-xl shadow-xl p-8">
                     {/* Logo and Title */}
                     <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <span className="text-white font-bold text-2xl">JDC</span>
+                        <div className="w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center mx-auto mb-4">
+                            <span className="text-white font-bold text-2xl"><img src="/logo.jpg" alt="JUST DC Logo" /></span>
                         </div>
                         <h1 className="text-3xl font-bold text-dark mb-2">Welcome Back</h1>
                         <p className="text-gray">Login to your JUST DC account</p>
@@ -105,7 +101,7 @@ const Login = () => {
                                     required
                                     disabled={loading}
                                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition disabled:bg-gray-100"
-                                    placeholder="your.email@example.com"
+                                    placeholder="bappy.just@gmail.com"
                                     autoComplete="email"
                                 />
                             </div>

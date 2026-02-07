@@ -11,7 +11,7 @@ import {
     FaCertificate,
     FaEnvelope,
     FaHistory,
-    FaTicketAlt, // ✅ NEW
+    FaTicketAlt,
 } from 'react-icons/fa';
 
 export const DASHBOARD_MENU = [
@@ -31,7 +31,7 @@ export const DASHBOARD_MENU = [
         roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // ✅ NEW: My Registrations
+    // My Registrations
     {
         key: 'registrations',
         label: 'My Registrations',
@@ -40,7 +40,7 @@ export const DASHBOARD_MENU = [
         roles: ['user', 'member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // ✅ My Certificates
+    // My Certificates
     {
         key: 'certificates',
         label: 'My Certificates',
@@ -66,51 +66,56 @@ export const DASHBOARD_MENU = [
         roles: ['member', 'executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
     },
 
-    // ===================== EXECUTIVE & ABOVE =====================
+    // ===================== MANAGEMENT (Moderator & Admin) =====================
+    // ✅ FIXED: Removed executive_member from events and gallery
     {
         key: 'manageEvents',
         label: 'Manage Events',
         path: '/dashboard/manage/events',
         icon: FaCalendarAlt,
-        roles: ['executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
+        roles: ['general_secretary', 'president', 'moderator', 'admin'],
     },
     {
         key: 'manageGallery',
         label: 'Manage Gallery',
         path: '/dashboard/manage/gallery',
         icon: FaImages,
-        roles: ['executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
+        roles: ['general_secretary', 'president', 'moderator', 'admin'],
     },
+
+    // ✅ Executive members CAN manage members
     {
         key: 'manageMembers',
         label: 'Manage Members',
         path: '/dashboard/manage/members',
         icon: FaUsers,
-        roles: ['executive_member', 'general_secretary', 'president', 'moderator', 'admin'],
+        roles: ['general_secretary', 'president', 'admin'],
     },
 
-    // ===================== TOP MANAGEMENT =====================
+    // ✅ Executive members CAN send emails
     {
         key: 'composeEmail',
         label: 'Compose Email',
         path: '/dashboard/manage/compose-email',
         icon: FaEnvelope,
-        roles: ['admin', 'president', 'general_secretary', 'moderator'],
+        roles: ['general_secretary', 'president', 'moderator', 'admin'],
     },
     {
         key: 'emailLogs',
         label: 'Email History',
         path: '/dashboard/manage/email-logs',
         icon: FaHistory,
-        roles: ['admin', 'president', 'general_secretary', 'moderator'],
+        roles: ['general_secretary', 'president', 'moderator', 'admin'],
     },
 
+    // ===================== ADMIN ONLY =====================
+    // ✅ FIXED: Only admin (not moderator) can manage users
     {
         key: 'manageUsers',
         label: 'User Management',
         path: '/dashboard/manage/users',
         icon: FaUserShield,
-        roles: ['admin', 'president', 'general_secretary'],
+        roles: ['admin'],
     },
 ];
 

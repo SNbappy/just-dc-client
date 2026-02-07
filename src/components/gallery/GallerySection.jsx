@@ -7,37 +7,37 @@ const GallerySection = () => {
     const images = [
         {
             id: 1,
-            url: 'https://images.unsplash.com/photo-1540317580384-e5d43616d00b?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery1.webp',
             title: 'Annual Debate Championship 2025',
             category: 'Tournament',
         },
         {
             id: 2,
-            url: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery2.webp',
             title: 'Team Practice Session',
             category: 'Practice',
         },
         {
             id: 3,
-            url: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery3.webp',
             title: 'Public Speaking Workshop',
             category: 'Workshop',
         },
         {
             id: 4,
-            url: 'https://images.unsplash.com/photo-1560439513-74b037a25d84?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery4.webp',
             title: 'Inter-University Competition',
             category: 'Tournament',
         },
         {
             id: 5,
-            url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery5.jpg',
             title: 'Guest Speaker Event',
             category: 'Event',
         },
         {
             id: 6,
-            url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop',
+            url: '/Gallery/Gallery5.jpg',
             title: 'Executive Committee Meeting',
             category: 'Meeting',
         },

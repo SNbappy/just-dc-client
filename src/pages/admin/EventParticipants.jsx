@@ -48,7 +48,8 @@ const EventParticipants = () => {
             setLoading(true);
             const [eventRes, regRes] = await Promise.all([
                 api.get(`/events/${id}`),
-                api.get(`/events/${id}/registrations`),
+                // ✅ UPDATED: Changed URL from /events/${id}/registrations to /registrations/events/${id}
+                api.get(`/registrations/events/${id}`),
             ]);
 
             setEvent(eventRes.data?.data || null);
@@ -180,10 +181,9 @@ const EventParticipants = () => {
         }, 100);
     };
 
-    // ========== ✅ FIXED: GROUPED TEAM MEMBERS ==========
+    // ========== GROUPED TEAM MEMBERS ==========
 
     const groupedTeam = () => {
-        // ✅ Ensure participants is an array
         const participants = Array.isArray(event?.participants) ? event.participants : [];
         const groups = {};
 
@@ -216,7 +216,6 @@ const EventParticipants = () => {
     }
 
     const grouped = groupedTeam();
-
 
     return (
         <div>
@@ -296,8 +295,13 @@ const EventParticipants = () => {
                                 <tbody className="divide-y divide-gray-200">
                                     {registrations.map((reg) => (
                                         <tr key={reg.id || reg._id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-dark font-semibold">{reg.name}</td>
-                                            <td className="px-4 py-3 text-gray">{reg.email}</td>
+                                            <td className="px-4 py-3 text-dark font-semibold">
+                                                {/* ✅ UPDATED: Handle both user and guest registrations */}
+                                                {reg.user?.name || reg.guestName || 'N/A'}
+                                            </td>
+                                            <td className="px-4 py-3 text-gray">
+                                                {reg.user?.email || reg.guestEmail || 'N/A'}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-semibold ${reg.status === 'confirmed'
@@ -419,7 +423,6 @@ const EventParticipants = () => {
                                                         .filter(Boolean)
                                                         .join(' • ') || '—';
 
-                                                // For certificate generation, create a pseudo-registration object
                                                 const pseudoReg = {
                                                     name: name,
                                                     email: isInternal ? member.user?.email : member.name,

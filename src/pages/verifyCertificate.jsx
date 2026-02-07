@@ -48,8 +48,8 @@ const VerifyCertificate = () => {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full mb-4">
-                        <span className="text-3xl font-bold text-white">JDC</span>
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full">
+                        <span className="text-3xl font-bold text-white"><img src="/logo.jpg" alt="" /></span>
                     </div>
                     <h1 className="text-4xl font-bold text-dark mb-2">Verify Certificate</h1>
                     <p className="text-gray">

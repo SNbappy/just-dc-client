@@ -4,19 +4,19 @@ import { HiArrowRight } from 'react-icons/hi';
 const LeadershipMessages = () => {
     const leaders = [
         {
-            name: 'John Doe',
+            name: 'Mutaleb Hossain',
             title: 'President',
-            session: '2023-2024',
+            session: '2025-2026',
             message: 'Welcome to JUST Debate Club! As president, I am honored to lead a community passionate about critical thinking and eloquent expression. Our club is more than debates—it\'s a family where ideas flourish and friendships are forged.',
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+            image: '/speeches/Mutaleb.jpg',
             color: 'primary',
         },
         {
-            name: 'Jane Smith',
+            name: 'Md. Sabbir Hossain Bappy',
             title: 'General Secretary',
             session: '2023-2024',
             message: 'Together, we create an inclusive environment where every voice matters. From organizing tournaments to mentoring new members, we ensure everyone has the opportunity to grow and excel in the art of debate.',
-            image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
+            image: '/speeches/Bappy.jpg',
             color: 'secondary',
         },
     ];
@@ -64,7 +64,7 @@ const LeadershipMessages = () => {
                                         <img
                                             src={leader.image}
                                             alt={leader.name}
-                                            className="relative w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-lg"
+                                            className="relative w-36 h-36 rounded-2xl object-cover ring-4 ring-white shadow-lg"
                                         />
                                         {/* Status Badge */}
                                         <div className={`absolute -bottom-1 -right-1 w-6 h-6 bg-${leader.color} rounded-full border-4 border-white`}></div>

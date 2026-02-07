@@ -116,14 +116,14 @@ const EventRegistration = () => {
 
             const res = await registrationService.register(eventId, selectedCategory.id, payload);
 
-            toast.success('Registration successful!');
-
-            // If payment required, redirect to payment gateway
-            if (res.data.payment?.gatewayUrl) {
+            // ✅ HANDLE PAYMENT REDIRECT
+            if (res.data?.payment?.gatewayUrl) {
+                toast.success('Redirecting to payment gateway...');
+                // Redirect to SSLCommerz
                 window.location.href = res.data.payment.gatewayUrl;
             } else {
-                // Free registration - redirect to dashboard
-                toast.success('Registration confirmed! Check your email.');
+                // Free registration
+                toast.success(res.message || 'Registration successful!');
                 navigate('/dashboard/registrations');
             }
         } catch (error) {
@@ -132,6 +132,7 @@ const EventRegistration = () => {
             setSubmitting(false);
         }
     };
+
 
     if (loading) {
         return (
